@@ -1,0 +1,73 @@
+# Netlify configuration — checked into Git on purpose.
+#
+# Why this file instead of clicking through the Netlify dashboard:
+# settings that live in a file are reviewable, revertible, and travel with the
+# repo. Anything set only in the UI is invisible to future-you. Where both
+# exist, netlify.toml wins for build settings.
+
+[build]
+  # No build step: plain HTML/CSS/JS is published straight from the repo root.
+  # When you add a bundler later, this becomes e.g. command = "npm run build"
+  # and publish = "dist".
+  publish = "."
+  # command is intentionally omitted — there is nothing to build yet.
+  # command = "npm run build"
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.html]
+  pretty_urls = true
+
+# ---------------------------------------------------------------------------
+# Security headers — applied to every response.
+# A static simulator holds no secrets, but headers are free, and getting them
+# right here is the same muscle you use on real workloads.
+# ---------------------------------------------------------------------------
+[[headers]]
+  for = "/*"
+
+  [headers.values]
+    # Stop the page being framed — clickjacking defence.
+    X-Frame-Options = "DENY"
+
+    # Browsers must honour the declared Content-Type, not sniff it.
+    X-Content-Type-Options = "nosniff"
+
+    # Don't leak the full URL to third parties.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # Force HTTPS for a year. Netlify serves HTTPS by default.
+    # Do NOT add "preload" until you are certain — preload is hard to undo.
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+    # Turn off browser features this app has no business using.
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+    # Everything is served from this origin. If you ever add a CDN script or
+    # Google Fonts, THIS LINE will block it — add the host here deliberately
+    # rather than deleting the policy.
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+
+# Long-cache fingerprinted assets only. Plain /assets/** files change in place,
+# so keep them revalidating rather than pinning a stale copy in the browser.
+[[headers]]
+  for = "/assets/*"
+
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# ---------------------------------------------------------------------------
+# Deploy contexts
+# ---------------------------------------------------------------------------
+[context.production]
+  [context.production.environment]
+    APP_ENV = "production"
+
+[context.deploy-preview]
+  [context.deploy-preview.environment]
+    APP_ENV = "preview"
+
+[context.branch-deploy]
+  [context.branch-deploy.environment]
+    APP_ENV = "branch"

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Conditional Access Simulator</title>
+  <meta name="description" content="An offline simulator of Conditional Access policy evaluation. Define rules, simulate a sign-in, and see why access was granted, blocked, or challenged." />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#128272;</text></svg>" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="site-title">Conditional Access Simulator</h1>
+      <p class="site-tagline">
+        A sandbox for policy evaluation logic. No tenant, no tokens, no real data &mdash;
+        everything runs in your browser.
+      </p>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+
+    <section class="card" aria-labelledby="status-heading">
+      <h2 id="status-heading">Deployment status</h2>
+      <p class="muted">
+        This page exists to prove the pipeline works end to end before any application code is
+        written. If you can read this on a <code>.netlify.app</code> URL, GitHub &rarr; Netlify
+        continuous deployment is live.
+      </p>
+
+      <dl class="kv">
+        <dt>Stylesheet loaded</dt>
+        <dd id="check-css"><span class="pill pill--wait">checking&hellip;</span></dd>
+
+        <dt>JavaScript loaded</dt>
+        <dd id="check-js"><span class="pill pill--wait">checking&hellip;</span></dd>
+
+        <dt>Served over HTTPS</dt>
+        <dd id="check-https"><span class="pill pill--wait">checking&hellip;</span></dd>
+
+        <dt>Host</dt>
+        <dd id="check-host" class="mono">&mdash;</dd>
+
+        <dt>Page rendered</dt>
+        <dd id="check-time" class="mono">&mdash;</dd>
+      </dl>
+
+      <p>
+        <button id="smoke-test" class="btn" type="button">Run engine smoke test</button>
+      </p>
+      <p id="smoke-result" class="muted" role="status" aria-live="polite">Not run yet.</p>
+    </section>
+
+    <section class="card" aria-labelledby="next-heading">
+      <h2 id="next-heading">What goes here next</h2>
+      <ol class="steps">
+        <li><strong>Policy editor</strong> &mdash; create, edit, enable/disable and delete rules.</li>
+        <li><strong>Sign-in builder</strong> &mdash; user, group, app sensitivity, location, device state, risk.</li>
+        <li><strong>Evaluation engine</strong> &mdash; block wins outright; otherwise grant requirements stack.</li>
+        <li><strong>Result panel</strong> &mdash; the verdict plus a per-policy "why" trace.</li>
+        <li><strong>Persistence</strong> &mdash; export/import a policy set as JSON.</li>
+      </ol>
+      <p class="muted">
+        Replace this section as each piece lands. Keep <code>index.html</code> deployable at all
+        times &mdash; <code>main</code> should never be broken.
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="site-footer wrap">
+    <p class="muted">
+      Educational simulation only. Not affiliated with or endorsed by Microsoft. Models
+      Conditional Access concepts in a simplified form and does not reproduce any production
+      policy engine.
+    </p>
+  </footer>
+
+  <script type="module" src="/assets/js/app.js"></script>
+</body>
+</html>
