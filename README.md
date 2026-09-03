@@ -1,14 +1,12 @@
 # Conditional Access Simulator
 
-An interactive, browser-only simulator of Conditional Access policy evaluation. Define a set of
-policies, describe a sign-in attempt, and see whether access is **granted**, **blocked**, or
-**granted with requirements** — along with a per-policy explanation of why.
+An interactive, browser-only simulator of Conditional Access policy evaluation. Define a set of policies, describe a sign-in attempt, and see whether access is **allowed**, **blocked**, blocked because a requirement cannot be satisfied, or **allowed subject to a challenge** — along with a per-policy explanation of why.
 
 > **Educational project.** It models Conditional Access *concepts* in simplified form. It is not
 > affiliated with or endorsed by Microsoft, does not connect to any tenant, and must not be used
 > to predict the behaviour of a production policy set.
 
-**Live site:** _add your Netlify URL here after the first deploy_
+**Live site:** https://veena-ca-simulator.netlify.app/
 
 ---
 
@@ -64,7 +62,8 @@ external font, add that host to the policy rather than removing it.
 
 - [x] Phase 0 — Conditional Access fundamentals
 - [x] Phase 1 — design spec (attributes, rule structure, decision logic)
-- [ ] Phase 2 — project setup and first deployable page
+- [x] Setup — GitHub repo, Netlify deployment, security headers, branch protection
+- [ ] Phase 2 — data model and evaluation engine
 - [ ] Phase 3 — policy editor
 - [ ] Phase 4 — evaluation engine + explanation trace
 - [ ] Phase 5 — persistence, import/export
