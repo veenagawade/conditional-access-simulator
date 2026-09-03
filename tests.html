@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Engine tests — Conditional Access Simulator</title>
+  <meta name="robots" content="noindex" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#129514;</text></svg>" />
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+  <style>
+    .summary { font-size: 1.15rem; font-weight: 600; margin: 0 0 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+    th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+    tr.fail { background: var(--bad-bg); }
+    .why { color: var(--muted); font-size: .86rem; }
+    .tablewrap { overflow-x: auto; }
+    .trace { font-size: .82rem; color: var(--muted); margin-top: .2rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="site-title">Engine tests</h1>
+      <p class="site-tagline">
+        The eight cases from <code>docs/phase1-spec.md</code> §6, run against
+        <code>evaluate()</code>. Reload after every edit.
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <p class="summary" id="summary">Running&hellip;</p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Case</th><th>Expected</th><th>Actual</th><th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { POLICIES, CASES } from '/assets/js/fixtures.js';
+    import { evaluate } from '/assets/js/engine.js';
+
+    const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c]));
+    const rows = document.getElementById('rows');
+    const summary = document.getElementById('summary');
+    let passed = 0;
+
+    for (const c of CASES) {
+      const problems = [];
+      let actual = '—', trace = '';
+
+      try {
+        const r = evaluate(c.signIn, POLICIES);
+
+        actual = r?.verdict ?? '(no verdict)';
+        if (actual !== c.expectedVerdict) {
+          problems.push(`verdict was "${actual}", expected "${c.expectedVerdict}"`);
+        }
+
+        // Outstanding requirements. Only meaningful when access wasn't denied —
+        // once a block or an unsatisfiable requirement decides the verdict, spec §4
+        // says anything still owed is moot, so we don't assert on it.
+        const verdictIsDenial = actual === 'blocked' || actual === 'blockedUnsatisfiable';
+        if (!verdictIsDenial && Array.isArray(r?.requirements) && c.expectedOutstanding) {
+          const got = r.requirements
+            .filter(q => q.status === 'unresolved')
+            .map(q => q.type).sort().join(',');
+          const want = [...c.expectedOutstanding].sort().join(',');
+          if (got !== want) problems.push(`outstanding [${got}], expected [${want}]`);
+        }
+
+        // Trace — reported, never failed. Build it in your second pass.
+        if (Array.isArray(r?.matched)) {
+          const got = r.matched.map(m => m.id).sort().join(',');
+          const want = [...c.expectedMatched].sort().join(',');
+          trace = got === want
+            ? `matched [${got}] ✓`
+            : `matched [${got}] — spec says [${want}] (not failing the test yet)`;
+        } else {
+          trace = 'no trace yet';
+        }
+      } catch (err) {
+        problems.push(esc(err.message));
+      }
+
+      const ok = problems.length === 0;
+      if (ok) passed++;
+
+      rows.insertAdjacentHTML('beforeend', `
+        <tr class="${ok ? '' : 'fail'}">
+          <td class="mono">${c.id}</td>
+          <td>${esc(c.description)}<div class="trace">${esc(trace)}</div></td>
+          <td class="mono">${esc(c.expectedVerdict)}</td>
+          <td class="mono">${esc(actual)}</td>
+          <td>
+            <span class="pill pill--${ok ? 'ok' : 'bad'}">${ok ? 'pass' : 'fail'}</span>
+            ${ok ? '' : `<div class="why">${problems.join('<br>')}</div>`}
+          </td>
+        </tr>`);
+    }
+
+    const all = passed === CASES.length;
+    summary.innerHTML =
+      `<span class="pill pill--${all ? 'ok' : 'bad'}">${passed} / ${CASES.length} passing</span>` +
+      (all ? ' — engine matches the spec.' : ' — keep going.');
+  </script>
+</body>
+</html>
