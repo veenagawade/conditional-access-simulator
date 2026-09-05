@@ -36,9 +36,14 @@ export function matches(policy, signIn) {
  * @param {'mfa'|'managedDevice'} requirement
  * @param {import('./fixtures.js').SignIn} signIn
  * @returns {'satisfied'|'failed'|'unresolved'}
+return 'failed';
  */
 export function resolveRequirement(requirement, signIn) {
-  throw new Error('resolveRequirement not implemented');
+  if (requirement === 'managedDevice') {
+    if (signIn.deviceTrust === 'managed') return 'satisfied';
+    return 'failed';
+  }
+  return 'unresolved';
 }
 
 /**
