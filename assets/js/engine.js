@@ -98,6 +98,12 @@ function whyNotMatched(policy, signIn) {
   return `${key} is ${signIn[key]}, rule requires ${required}`;
 }
 
+function requirementReason(status) {
+  if (status === 'satisfied') return 'the device is already managed';
+  if (status === 'failed') return 'the device is unmanaged and cannot satisfy this';
+  return 'the sign-in cannot say whether MFA can be completed';
+}
+
 export function evaluate(signIn, policies) {
   const matched = policies.filter(p => matches(p, signIn));
 
@@ -117,10 +123,10 @@ export function evaluate(signIn, policies) {
   if (blocker) return { verdict: 'blocked', requirements: [], ...trace };
 
   const types = [...new Set(matched.map(p => p.requirement))];
-  const requirements = types.map(type => ({
-    type,
-    status: resolveRequirement(type, signIn),
-  }));
+    const requirements = types.map(type => {
+    const status = resolveRequirement(type, signIn);
+    return { type, status, because: requirementReason(status) };
+  });
 
   if (requirements.some(r => r.status === 'failed')) return { verdict: 'blockedUnsatisfiable', requirements, ...trace };
   if (requirements.some(r => r.status === 'unresolved')) return { verdict: 'challenge', requirements, ...trace };
