@@ -79,11 +79,42 @@ export function resolveRequirement(requirement, signIn) {
  * @param {import('./fixtures.js').SignIn} signIn
  * @param {import('./fixtures.js').Policy[]} policies
  */
+
+/** "appSensitivity = high and deviceTrust = unmanaged" */
+function describeConditions(conditions) {
+  return Object.entries(conditions)
+    .map(([key, value]) => `${key} = ${value}`)
+    .join(' and ');
+}
+
+function whyNotMatched(policy, signIn) {
+  if (!policy.enabled) return 'policy is disabled';
+
+  const failing = Object.entries(policy.conditions)
+    .find(([key, value]) => signIn[key] !== value);
+
+  if (!failing) return 'all conditions met';
+  const [key, required] = failing;
+  return `${key} is ${signIn[key]}, rule requires ${required}`;
+}
+
 export function evaluate(signIn, policies) {
   const matched = policies.filter(p => matches(p, signIn));
+
+    const matchedTrace = matched.map(p => ({
+    id: p.id,
+    name: p.name,
+    why: describeConditions(p.conditions),
+  }));
+
+    const unmatchedTrace = policies
+    .filter(p => !matched.includes(p))
+    .map(p => ({ id: p.id, name: p.name, why: whyNotMatched(p, signIn) }));
   
+    const trace = { matched: matchedTrace, unmatched: unmatchedTrace };
+
   const blocker = matched.find(p => p.requirement === 'block');
-  if (blocker) return { verdict: 'blocked' };
+  if (blocker) return { verdict: 'blocked', requirements: [], ...trace };
 
   const types = [...new Set(matched.map(p => p.requirement))];
   const requirements = types.map(type => ({
@@ -91,7 +122,7 @@ export function evaluate(signIn, policies) {
     status: resolveRequirement(type, signIn),
   }));
 
-  if (requirements.some(r => r.status === 'failed')) return { verdict: 'blockedUnsatisfiable', requirements };
-  if (requirements.some(r => r.status === 'unresolved')) return { verdict: 'challenge', requirements };
-  return { verdict: 'allowed', requirements };
+  if (requirements.some(r => r.status === 'failed')) return { verdict: 'blockedUnsatisfiable', requirements, ...trace };
+  if (requirements.some(r => r.status === 'unresolved')) return { verdict: 'challenge', requirements, ...trace };
+  return { verdict: 'allowed', requirements, ...trace };
 }
