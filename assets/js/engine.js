@@ -86,10 +86,12 @@ export function evaluate(signIn, policies) {
   if (blocker) return { verdict: 'blocked' };
 
   const types = [...new Set(matched.map(p => p.requirement))];
-  const statuses = types.map(t => resolveRequirement(t, signIn));
-  if (statuses.includes('failed')) return { verdict: 'blockedUnsatisfiable' };
+  const requirements = types.map(type => ({
+    type,
+    status: resolveRequirement(type, signIn),
+  }));
 
-  if (statuses.includes('unresolved')) return { verdict: 'challenge' };
-
-  return { verdict: 'allowed' };
+  if (requirements.some(r => r.status === 'failed')) return { verdict: 'blockedUnsatisfiable', requirements };
+  if (requirements.some(r => r.status === 'unresolved')) return { verdict: 'challenge', requirements };
+  return { verdict: 'allowed', requirements };
 }
