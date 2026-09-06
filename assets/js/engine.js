@@ -80,5 +80,16 @@ export function resolveRequirement(requirement, signIn) {
  * @param {import('./fixtures.js').Policy[]} policies
  */
 export function evaluate(signIn, policies) {
-  throw new Error('evaluate not implemented');
+  const matched = policies.filter(p => matches(p, signIn));
+  
+  const blocker = matched.find(p => p.requirement === 'block');
+  if (blocker) return { verdict: 'blocked' };
+
+  const types = [...new Set(matched.map(p => p.requirement))];
+  const statuses = types.map(t => resolveRequirement(t, signIn));
+  if (statuses.includes('failed')) return { verdict: 'blockedUnsatisfiable' };
+
+  if (statuses.includes('unresolved')) return { verdict: 'challenge' };
+
+  return { verdict: 'allowed' };
 }
