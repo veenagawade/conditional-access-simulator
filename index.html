@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Veena's Conditional Access Simulator</title>
-  <meta name="description" content="An offline simulator of Conditional Access policy evaluation. Define rules, simulate a sign-in, and see why access was granted, blocked, or challenged." />
+  <meta name="description" content="An offline simulator of Conditional Access policy evaluation. Define rules, simulate a sign-in, and see why access was allowed, blocked, or challenged." />
   <meta name="color-scheme" content="light dark" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#128272;</text></svg>" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
@@ -24,15 +24,40 @@
 
   <main id="main" class="wrap">
 
-    <section class="card" aria-labelledby="status-heading">
-      <h2 id="status-heading">Deployment status</h2>
-      <p class="muted">
-        This page exists to prove the pipeline works end to end before any application code is
-        written. If you can read this on a <code>.netlify.app</code> URL, GitHub &rarr; Netlify
-        continuous deployment is live.
+    <section class="card" aria-labelledby="engine-heading">
+      <h2 id="engine-heading">How it decides</h2>
+      <p>
+        Every enabled policy whose conditions match the sign-in is in scope. From there:
       </p>
+      <ul class="steps">
+        <li>A <strong>block</strong> from any matching policy wins outright. Nothing overrides it.</li>
+        <li>
+          Otherwise the grant requirements of all matching policies <strong>stack</strong> &mdash;
+          and each is resolved against the sign-in where the sign-in can answer it.
+        </li>
+        <li>
+          A requirement the sign-in <em>can</em> answer and fails &mdash; an unmanaged device facing
+          a managed-device requirement &mdash; is a <strong>denial</strong>, not a prompt.
+        </li>
+        <li>
+          A requirement it <em>cannot</em> answer &mdash; whether the user can complete MFA &mdash;
+          is reported as a <strong>challenge</strong>.
+        </li>
+      </ul>
+      <p class="muted">
+        Four verdicts, not two: <code>allowed</code>, <code>blocked</code>,
+        <code>blockedUnsatisfiable</code>, <code>challenge</code>. The full design is in
+        <code>docs/phase1-spec.md</code>.
+      </p>
+    </section>
+
+    <section class="card" aria-labelledby="status-heading">
+      <h2 id="status-heading">Status</h2>
 
       <dl class="kv">
+        <dt>Engine self-test</dt>
+        <dd id="check-engine"><span class="pill pill--wait">running&hellip;</span></dd>
+
         <dt>Stylesheet loaded</dt>
         <dd id="check-css"><span class="pill pill--wait">checking&hellip;</span></dd>
 
@@ -49,25 +74,23 @@
         <dd id="check-time" class="mono">&mdash;</dd>
       </dl>
 
-      <p>
-        <button id="smoke-test" class="btn" type="button">Run engine smoke test</button>
+      <p id="engine-failures" class="muted" role="status" aria-live="polite"></p>
+
+      <p class="muted">
+        The self-test runs the real engine against the eight cases in the design spec, on page
+        load. <a href="/tests.html">See the full test table</a> for the per-case breakdown.
       </p>
-      <p id="smoke-result" class="muted" role="status" aria-live="polite">Not run yet.</p>
     </section>
 
     <section class="card" aria-labelledby="next-heading">
-      <h2 id="next-heading">What goes here next</h2>
+      <h2 id="next-heading">Roadmap</h2>
       <ol class="steps">
+        <li><s>Evaluation engine &mdash; four verdicts, with a per-policy explanation trace.</s> Done.</li>
         <li><strong>Policy editor</strong> &mdash; create, edit, enable/disable and delete rules.</li>
-        <li><strong>Sign-in builder</strong> &mdash; user, group, app sensitivity, location, device state, risk.</li>
-        <li><strong>Evaluation engine</strong> &mdash; block wins outright; otherwise grant requirements stack.</li>
-        <li><strong>Result panel</strong> &mdash; the verdict plus a per-policy "why" trace.</li>
-        <li><strong>Persistence</strong> &mdash; export/import a policy set as JSON.</li>
+        <li><strong>Sign-in builder</strong> &mdash; device, trust, location, risk, app sensitivity.</li>
+        <li><strong>Result panel</strong> &mdash; the verdict, plus which policies applied and which did not.</li>
+        <li><strong>Persistence</strong> &mdash; export and import a policy set as JSON.</li>
       </ol>
-      <p class="muted">
-        Replace this section as each piece lands. Keep <code>index.html</code> deployable at all
-        times &mdash; <code>main</code> should never be broken.
-      </p>
     </section>
 
   </main>
