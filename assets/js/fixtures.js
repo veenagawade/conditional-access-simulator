@@ -1,4 +1,9 @@
-// TEST DATA ONLY. Do not import this into application code.
+// TEST DATA. Read by tests — never used as the app's editable policy state.
+//
+// Tests may import this freely, including the homepage self-test in app.js: that
+// is a test, and it should run against the spec's fixed policy set. What must
+// never happen is the policy editor loading POLICIES and letting a user edit it.
+// The editor's data comes from defaults.js.
 //
 // The four starter policies from docs/phase1-spec.md §5, and the eight test
 // cases from §6. This file is the definition of "correct". Do not edit it to
