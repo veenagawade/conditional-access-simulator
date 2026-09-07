@@ -1,9 +1,27 @@
-// Phase 2 — test fixtures
+// TEST DATA ONLY. Do not import this into application code.
 //
 // The four starter policies from docs/phase1-spec.md §5, and the eight test
 // cases from §6. This file is the definition of "correct". Do not edit it to
 // make your engine pass — change the engine, or change the spec first and then
 // this file.
+//
+// The app's editable starting policies live in defaults.js. The two files hold
+// the same four rules today, and that duplication is deliberate: if the tests
+// imported the app's data, changing a default policy would silently change what
+// the tests assert, and a broken policy set would still "pass". Test data has to
+// be independent of the thing it is testing.
+//
+// Everything exported here is deeply frozen. Modules run in strict mode, so any
+// attempt to mutate a fixture throws instead of failing silently.
+
+/** Recursively freeze an object and everything it contains. */
+function deepFreeze(value) {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    Object.values(value).forEach(deepFreeze);
+  }
+  return value;
+}
 
 /**
  * @typedef {object} SignIn
@@ -24,7 +42,7 @@
  */
 
 /** @type {Policy[]} */
-export const POLICIES = [
+export const POLICIES = deepFreeze([
   {
     id: 'R1',
     name: 'Block unmanaged devices from high-sensitivity apps',
@@ -53,7 +71,7 @@ export const POLICIES = [
     conditions: { riskLevel: 'high' },
     requirement: 'mfa',
   },
-];
+]);
 
 /**
  * @typedef {object} TestCase
@@ -66,7 +84,7 @@ export const POLICIES = [
  */
 
 /** @type {TestCase[]} */
-export const CASES = [
+export const CASES = deepFreeze([
   {
     id: 'T1',
     description: 'Managed laptop, trusted network, low-sensitivity app — nothing applies',
@@ -131,4 +149,4 @@ export const CASES = [
     expectedOutstanding: ['mfa'],
     expectedMatched: ['R2', 'R3', 'R4'],
   },
-];
+]);

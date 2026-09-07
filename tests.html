@@ -35,6 +35,23 @@
         </table>
       </div>
     </section>
+    <section class="card">
+      <h2>Data invariants</h2>
+      <p class="muted">
+        Checks on the data itself rather than the engine. Test fixtures must be immutable, and the
+        app's default policy set must hand out fresh copies so editing never corrupts the defaults.
+      </p>
+      <p class="summary" id="invariant-summary">Running&hellip;</p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Check</th><th>Result</th></tr>
+          </thead>
+          <tbody id="invariant-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 
   <script type="module" src="/assets/js/tests.js"></script>
