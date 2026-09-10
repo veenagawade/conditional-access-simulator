@@ -66,14 +66,34 @@ function renderPolicies() {
       <td class="muted">${esc(describeConditions(p.conditions))}</td>
       <td class="mono">${esc(p.requirement)}</td>
       <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
+      <td>
+        <button type="button" class="btn btn--sm" data-action="toggle" data-id="${esc(p.id)}">
+          ${p.enabled ? 'Disable' : 'Enable'}
+        </button>
+      </td>
     </tr>`).join('');
 
   const enabled = policies.filter((p) => p.enabled).length;
   if (count) count.textContent = `${policies.length} policies, ${enabled} enabled.`;
 }
 
+function onPolicyAction(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+
+  const policy = policies.find((p) => p.id === button.dataset.id);
+  if (!policy) return;
+
+  if (button.dataset.action === 'toggle') {
+    policy.enabled = !policy.enabled;
+  }
+
+  renderPolicies();
+}
+
 function init() {
   renderPolicies();
+  document.getElementById('policy-rows').addEventListener('click', onPolicyAction);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.

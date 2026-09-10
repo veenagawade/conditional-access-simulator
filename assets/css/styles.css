@@ -157,6 +157,32 @@ code {
 .data-table tr.is-disabled .policy-name,
 .data-table tr.is-disabled td { opacity: .55; }
 
+/* Small, quiet button for use inside table rows. */
+.btn--sm {
+  padding: .26rem .7rem;
+  font-size: .82rem;
+  color: var(--accent);
+  background: transparent;
+  border-color: var(--border);
+  white-space: nowrap;
+}
+.btn--sm:hover {
+  filter: none;
+  border-color: var(--accent);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .empty-state {
   padding: 1.25rem .6rem;
   color: var(--muted);
