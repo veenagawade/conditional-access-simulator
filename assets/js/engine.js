@@ -81,7 +81,7 @@ export function resolveRequirement(requirement, signIn) {
  */
 
 /** "appSensitivity = high and deviceTrust = unmanaged" */
-function describeConditions(conditions) {
+export function describeConditions(conditions) {
   return Object.entries(conditions)
     .map(([key, value]) => `${key} = ${value}`)
     .join(' and ');
@@ -107,23 +107,23 @@ function requirementReason(status) {
 export function evaluate(signIn, policies) {
   const matched = policies.filter(p => matches(p, signIn));
 
-    const matchedTrace = matched.map(p => ({
+  const matchedTrace = matched.map(p => ({
     id: p.id,
     name: p.name,
     why: describeConditions(p.conditions),
   }));
 
-    const unmatchedTrace = policies
+  const unmatchedTrace = policies
     .filter(p => !matched.includes(p))
     .map(p => ({ id: p.id, name: p.name, why: whyNotMatched(p, signIn) }));
   
-    const trace = { matched: matchedTrace, unmatched: unmatchedTrace };
+  const trace = { matched: matchedTrace, unmatched: unmatchedTrace };
 
   const blocker = matched.find(p => p.requirement === 'block');
   if (blocker) return { verdict: 'blocked', requirements: [], ...trace };
 
   const types = [...new Set(matched.map(p => p.requirement))];
-    const requirements = types.map(type => {
+  const requirements = types.map(type => {
     const status = resolveRequirement(type, signIn);
     return { type, status, because: requirementReason(status) };
   });

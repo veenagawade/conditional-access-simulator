@@ -8,7 +8,8 @@
 // There is deliberately no evaluation logic in this file. One engine, one
 // definition, in engine.js.
 
-import { evaluate } from './engine.js';
+import { evaluate, describeConditions } from './engine.js';
+import { createDefaultPolicies } from './defaults.js';
 import { POLICIES, CASES } from './fixtures.js';
 
 /* ------------------------------------------------------------------ *
@@ -46,7 +47,33 @@ function setText(id, text) {
   if (el) el.textContent = text;
 }
 
+/* ------------------------------------------------------------------ *
+ * Policy list
+ * ------------------------------------------------------------------ */
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+let policies = createDefaultPolicies();
+
+function renderPolicies() {
+  const tbody = document.getElementById('policy-rows');
+  const count = document.getElementById('policy-count');
+  if (!tbody) return;
+
+  tbody.innerHTML = policies.map((p) => `
+    <tr class="${p.enabled ? '' : 'is-disabled'}">
+      <td class="mono">${esc(p.id)}</td>
+      <td class="policy-name">${esc(p.name)}</td>
+      <td class="muted">${esc(describeConditions(p.conditions))}</td>
+      <td class="mono">${esc(p.requirement)}</td>
+      <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
+    </tr>`).join('');
+
+  const enabled = policies.filter((p) => p.enabled).length;
+  if (count) count.textContent = `${policies.length} policies, ${enabled} enabled.`;
+}
+
 function init() {
+  renderPolicies();
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.

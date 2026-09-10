@@ -130,6 +130,39 @@ code {
 .steps { padding-left: 1.2rem; }
 .steps li { margin-bottom: .4rem; }
 
+/* Data tables — the policy list, and anything tabular that follows. */
+.tablewrap { overflow-x: auto; }
+
+.data-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: .93rem;
+}
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: .55rem .6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.data-table th {
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table .policy-name { font-weight: 600; }
+.data-table tr.is-disabled .policy-name,
+.data-table tr.is-disabled td { opacity: .55; }
+
+.empty-state {
+  padding: 1.25rem .6rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .site-footer {
   border-top: 1px solid var(--border);
   padding: 1.5rem 0 3rem;
