@@ -51,6 +51,31 @@
       </p>
     </section>
 
+    <section class="card" aria-labelledby="policies-heading">
+      <h2 id="policies-heading">Policies</h2>
+      <p class="muted">
+        The policy set a sign-in is evaluated against. Every enabled policy whose conditions match
+        is in scope.
+      </p>
+
+      <div class="tablewrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Name</th>
+              <th scope="col">Conditions</th>
+              <th scope="col">Requirement</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="policy-rows"></tbody>
+        </table>
+      </div>
+
+      <p id="policy-count" class="muted"></p>
+    </section>
+
     <section class="card" aria-labelledby="status-heading">
       <h2 id="status-heading">Status</h2>
 
