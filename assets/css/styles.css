@@ -171,6 +171,15 @@ code {
   border-color: var(--accent);
 }
 
+/* Destructive variant — same quiet shape, warning colour. */
+.btn--danger { color: var(--bad); }
+.btn--danger:hover { border-color: var(--bad); }
+
+.row-actions {
+  display: flex;
+  gap: .4rem;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -54,12 +54,15 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 let policies = createDefaultPolicies();
 
-function renderPolicies() {
-  const tbody = document.getElementById('policy-rows');
-  const count = document.getElementById('policy-count');
-  if (!tbody) return;
+const EMPTY_ROW = `
+  <tr>
+    <td colspan="6" class="empty-state">
+      No policies. With nothing to match, every sign-in is allowed.
+    </td>
+  </tr>`;
 
-  tbody.innerHTML = policies.map((p) => `
+function policyRow(p) {
+  return `
     <tr class="${p.enabled ? '' : 'is-disabled'}">
       <td class="mono">${esc(p.id)}</td>
       <td class="policy-name">${esc(p.name)}</td>
@@ -67,11 +70,20 @@ function renderPolicies() {
       <td class="mono">${esc(p.requirement)}</td>
       <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
       <td>
-        <button type="button" class="btn btn--sm" data-action="toggle" data-id="${esc(p.id)}">
-          ${p.enabled ? 'Disable' : 'Enable'}
-        </button>
+        <div class="row-actions">
+          <button type="button" class="btn btn--sm" data-action="toggle" data-id="${esc(p.id)}">${p.enabled ? 'Disable' : 'Enable'}</button>
+          <button type="button" class="btn btn--sm btn--danger" data-action="delete" data-id="${esc(p.id)}">Delete</button>
+        </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+}
+
+function renderPolicies() {
+  const tbody = document.getElementById('policy-rows');
+  const count = document.getElementById('policy-count');
+  if (!tbody) return;
+
+  tbody.innerHTML = policies.length ? policies.map(policyRow).join('') : EMPTY_ROW;
 
   const enabled = policies.filter((p) => p.enabled).length;
   if (count) count.textContent = `${policies.length} policies, ${enabled} enabled.`;
@@ -81,11 +93,16 @@ function onPolicyAction(event) {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
-  const policy = policies.find((p) => p.id === button.dataset.id);
-  if (!policy) return;
+  const id = button.dataset.id;
+  const action = button.dataset.action;
 
-  if (button.dataset.action === 'toggle') {
-    policy.enabled = !policy.enabled;
+  if (action === 'toggle') {
+    const policy = policies.find((p) => p.id === id);
+    if (policy) policy.enabled = !policy.enabled;
+  }
+
+  if (action === 'delete') {
+    policies = policies.filter((p) => p.id !== id);
   }
 
   renderPolicies();
