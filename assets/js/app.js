@@ -9,7 +9,7 @@
 // definition, in engine.js.
 
 import { evaluate, describeConditions } from './engine.js';
-import { createDefaultPolicies } from './defaults.js';
+import { createDefaultPolicies, nextPolicyId } from './defaults.js';
 import { POLICIES, CASES } from './fixtures.js';
 
 /* ------------------------------------------------------------------ *
@@ -66,7 +66,9 @@ function policyRow(p) {
     <tr class="${p.enabled ? '' : 'is-disabled'}">
       <td class="mono">${esc(p.id)}</td>
       <td class="policy-name">${esc(p.name)}</td>
-      <td class="muted">${esc(describeConditions(p.conditions))}</td>
+      <td class="muted">${p.conditions && Object.keys(p.conditions).length
+        ? esc(describeConditions(p.conditions))
+        : '<span class="condition-any">matches every sign-in</span>'}</td>
       <td class="mono">${esc(p.requirement)}</td>
       <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
       <td>
@@ -108,9 +110,49 @@ function onPolicyAction(event) {
   renderPolicies();
 }
 
+const CONDITION_KEYS = ['deviceType', 'deviceTrust', 'location', 'riskLevel', 'appSensitivity'];
+
+function onPolicyFormSubmit(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const error = document.getElementById('policy-form-error');
+
+  const name = String(data.get('name') ?? '').trim();
+  if (!name) {
+    if (error) error.textContent = 'Give the policy a name — it is what the explanation will show.';
+    form.querySelector('#f-name')?.focus();
+    return;
+  }
+
+  const conditions = {};
+  for (const key of CONDITION_KEYS) {
+    const value = String(data.get(key) ?? '');
+    if (value) conditions[key] = value;
+  }
+
+  policies = [
+    ...policies,
+    {
+      id: nextPolicyId(policies),
+      name,
+      enabled: true,
+      conditions,
+      requirement: String(data.get('requirement') ?? 'mfa'),
+    },
+  ];
+
+  if (error) error.textContent = '';
+  form.reset();
+  renderPolicies();
+  form.querySelector('#f-name')?.focus();
+}
+
 function init() {
   renderPolicies();
   document.getElementById('policy-rows').addEventListener('click', onPolicyAction);
+  document.getElementById('policy-form')?.addEventListener('submit', onPolicyFormSubmit);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.
