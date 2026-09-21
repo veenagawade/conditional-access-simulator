@@ -77,7 +77,7 @@
       <p id="policy-count" class="muted"></p>
 
       <form id="policy-form" class="policy-form" novalidate>
-        <h3 class="form-title">Add a policy</h3>
+        <h3 class="form-title" id="policy-form-title">Add a policy</h3>
 
         <div class="field">
           <label for="f-name">Name</label>
@@ -155,7 +155,10 @@
 
         <p id="policy-form-error" class="form-error" role="alert"></p>
 
-        <button type="submit" class="btn">Add policy</button>
+        <div class="form-actions">
+          <button type="submit" class="btn" id="policy-form-submit">Add policy</button>
+          <button type="button" class="btn btn--sm" id="policy-form-cancel" hidden>Cancel</button>
+        </div>
       </form>
     </section>
 
