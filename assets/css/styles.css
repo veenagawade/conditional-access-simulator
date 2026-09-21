@@ -282,3 +282,21 @@ code {
   color: var(--warn);
   font-weight: 600;
 }
+
+.form-actions {
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+}
+
+/* The form is highlighted while it is editing an existing policy, so it is
+   never ambiguous whether Save will update or create. */
+.policy-form.is-editing {
+  padding: 1.1rem 1.1rem .4rem;
+  margin-top: 1.25rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+tr.is-editing td { background: var(--warn-bg); }

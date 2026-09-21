@@ -53,6 +53,7 @@ function setText(id, text) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 let policies = createDefaultPolicies();
+let editingId = null;
 
 const EMPTY_ROW = `
   <tr>
@@ -63,7 +64,7 @@ const EMPTY_ROW = `
 
 function policyRow(p) {
   return `
-    <tr class="${p.enabled ? '' : 'is-disabled'}">
+    <tr class="${p.enabled ? '' : 'is-disabled'} ${p.id === editingId ? 'is-editing' : ''}">
       <td class="mono">${esc(p.id)}</td>
       <td class="policy-name">${esc(p.name)}</td>
       <td class="muted">${p.conditions && Object.keys(p.conditions).length
@@ -73,6 +74,7 @@ function policyRow(p) {
       <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
       <td>
         <div class="row-actions">
+          <button type="button" class="btn btn--sm" data-action="edit" data-id="${esc(p.id)}">Edit</button>
           <button type="button" class="btn btn--sm" data-action="toggle" data-id="${esc(p.id)}">${p.enabled ? 'Disable' : 'Enable'}</button>
           <button type="button" class="btn btn--sm btn--danger" data-action="delete" data-id="${esc(p.id)}">Delete</button>
         </div>
@@ -105,8 +107,59 @@ function onPolicyAction(event) {
 
   if (action === 'delete') {
     policies = policies.filter((p) => p.id !== id);
+    if (id === editingId) {
+      cancelEdit();
+      return;
+    }
   }
 
+  if (action === 'edit') {
+    startEdit(id);
+    return;
+  }
+
+  renderPolicies();
+}
+
+function setFormMode() {
+  const form = document.getElementById('policy-form');
+  const title = document.getElementById('policy-form-title');
+  const submit = document.getElementById('policy-form-submit');
+  const cancel = document.getElementById('policy-form-cancel');
+  if (!form) return;
+
+  const editing = editingId !== null;
+  form.classList.toggle('is-editing', editing);
+  if (title) title.textContent = editing ? `Edit ${editingId}` : 'Add a policy';
+  if (submit) submit.textContent = editing ? 'Save changes' : 'Add policy';
+  if (cancel) cancel.hidden = !editing;
+}
+
+function startEdit(id) {
+  const policy = policies.find((p) => p.id === id);
+  const form = document.getElementById('policy-form');
+  if (!policy || !form) return;
+
+  editingId = id;
+  form.elements.name.value = policy.name;
+  for (const key of CONDITION_KEYS) {
+    form.elements[key].value = policy.conditions?.[key] ?? '';
+  }
+  form.elements.requirement.value = policy.requirement;
+
+  setFormMode();
+  renderPolicies();
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  form.elements.name.focus();
+}
+
+function cancelEdit() {
+  const form = document.getElementById('policy-form');
+  const error = document.getElementById('policy-form-error');
+  editingId = null;
+  form?.reset();
+  if (error) error.textContent = '';
+  setFormMode();
   renderPolicies();
 }
 
@@ -132,27 +185,31 @@ function onPolicyFormSubmit(event) {
     if (value) conditions[key] = value;
   }
 
-  policies = [
-    ...policies,
-    {
-      id: nextPolicyId(policies),
-      name,
-      enabled: true,
-      conditions,
-      requirement: String(data.get('requirement') ?? 'mfa'),
-    },
-  ];
+  const requirement = String(data.get('requirement') ?? 'mfa');
+
+  if (editingId !== null) {
+    policies = policies.map((p) =>
+      p.id === editingId ? { ...p, name, conditions, requirement } : p);
+    editingId = null;
+  } else {
+    policies = [
+      ...policies,
+      { id: nextPolicyId(policies), name, enabled: true, conditions, requirement },
+    ];
+  }
 
   if (error) error.textContent = '';
   form.reset();
+  setFormMode();
   renderPolicies();
-  form.querySelector('#f-name')?.focus();
+  form.elements.name.focus();
 }
 
 function init() {
   renderPolicies();
-  document.getElementById('policy-rows').addEventListener('click', onPolicyAction);
+  document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);
   document.getElementById('policy-form')?.addEventListener('submit', onPolicyFormSubmit);
+  document.getElementById('policy-form-cancel')?.addEventListener('click', cancelEdit);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.
