@@ -300,3 +300,19 @@ code {
 }
 
 tr.is-editing td { background: var(--warn-bg); }
+
+.list-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.list-footer p { margin: 0; }
+
+/* Armed state for the two-step reset. */
+#policy-reset.is-armed {
+  color: var(--bad);
+  border-color: var(--bad);
+  font-weight: 700;
+}

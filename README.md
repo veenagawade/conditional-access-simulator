@@ -63,11 +63,11 @@ external font, add that host to the policy rather than removing it.
 - [x] Phase 0 — Conditional Access fundamentals
 - [x] Phase 1 — design spec (attributes, rule structure, decision logic)
 - [x] Setup — GitHub repo, Netlify deployment, security headers, branch protection
-- [ ] Phase 2 — data model and evaluation engine
-- [ ] Phase 3 — policy editor
-- [ ] Phase 4 — evaluation engine + explanation trace
-- [ ] Phase 5 — persistence, import/export
-- [ ] Phase 6 — polish, tests, write-up
+- [x] Phase 2 — evaluation engine: four verdicts, with a per-policy explanation trace
+- [x] Phase 3 — homepage wired to the real engine
+- [x] Phase 4 — policy editor: list, enable/disable, delete, add, edit, reset
+- [ ] Phase 5 — sign-in builder and result panel
+- [ ] Phase 6 — persistence (export/import JSON), polish, write-up
 
 ## Licence
 

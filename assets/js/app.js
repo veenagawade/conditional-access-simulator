@@ -54,6 +54,8 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 let policies = createDefaultPolicies();
 let editingId = null;
+let resetArmed = false;
+let resetTimer = null;
 
 const EMPTY_ROW = `
   <tr>
@@ -97,6 +99,8 @@ function onPolicyAction(event) {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
+  disarmReset();
+
   const id = button.dataset.id;
   const action = button.dataset.action;
 
@@ -118,6 +122,36 @@ function onPolicyAction(event) {
     return;
   }
 
+  renderPolicies();
+}
+
+function setResetButton() {
+  const button = document.getElementById('policy-reset');
+  if (!button) return;
+  button.classList.toggle('is-armed', resetArmed);
+  button.textContent = resetArmed ? 'Confirm reset — discards your changes' : 'Reset to defaults';
+}
+
+function disarmReset() {
+  if (!resetArmed) return;
+  resetArmed = false;
+  clearTimeout(resetTimer);
+  setResetButton();
+}
+
+function onResetClick() {
+  if (!resetArmed) {
+    resetArmed = true;
+    setResetButton();
+    resetTimer = setTimeout(disarmReset, 5000);
+    return;
+  }
+
+  disarmReset();
+  policies = createDefaultPolicies();
+  editingId = null;
+  document.getElementById('policy-form')?.reset();
+  setFormMode();
   renderPolicies();
 }
 
@@ -207,9 +241,11 @@ function onPolicyFormSubmit(event) {
 
 function init() {
   renderPolicies();
+  setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);
   document.getElementById('policy-form')?.addEventListener('submit', onPolicyFormSubmit);
   document.getElementById('policy-form-cancel')?.addEventListener('click', cancelEdit);
+  document.getElementById('policy-reset')?.addEventListener('click', onResetClick);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.
