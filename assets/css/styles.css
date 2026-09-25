@@ -356,3 +356,46 @@ tr.is-editing td { background: var(--warn-bg); }
 }
 
 .attr-value { font-weight: 600; }
+
+/* The verdict. Colour carries severity, words carry cause: both denial
+   verdicts are red, and the sentence beneath says which denial it is. */
+.verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .6rem;
+  margin-top: 1.1rem;
+  padding: .85rem 1.1rem;
+  border: 2px solid currentColor;
+  border-radius: var(--radius);
+}
+
+.verdict-label {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.verdict-code {
+  background: transparent;
+  border-color: currentColor;
+  color: inherit;
+  opacity: .8;
+}
+
+.verdict--ok   { color: var(--ok);   background: var(--ok-bg); }
+.verdict--warn { color: var(--warn); background: var(--warn-bg); }
+.verdict--bad  { color: var(--bad);  background: var(--bad-bg); }
+
+.verdict-reading {
+  margin: .7rem 0 0;
+  max-width: 62ch;
+  color: var(--muted);
+}
+
+/* Only reachable if engine.js grows a verdict this file has not been told
+   about. Visible on purpose. */
+.verdict-unknown {
+  margin-top: 1.1rem;
+  color: var(--bad);
+  font-weight: 700;
+}
