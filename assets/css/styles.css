@@ -399,3 +399,21 @@ tr.is-editing td { background: var(--warn-bg); }
   color: var(--bad);
   font-weight: 700;
 }
+
+/* Section headings inside the result panel. Quieter than a card heading —
+   these are parts of one answer, not separate topics. */
+.result-subhead {
+  margin: 1.6rem 0 .5rem;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Used where a section is empty. It always says why it is empty, never just
+   sits blank. */
+.result-note {
+  margin: 0;
+  max-width: 62ch;
+}
