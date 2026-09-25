@@ -69,9 +69,7 @@ function policyRow(p) {
     <tr class="${p.enabled ? '' : 'is-disabled'} ${p.id === editingId ? 'is-editing' : ''}">
       <td class="mono">${esc(p.id)}</td>
       <td class="policy-name">${esc(p.name)}</td>
-      <td class="muted">${p.conditions && Object.keys(p.conditions).length
-        ? esc(describeConditions(p.conditions))
-        : '<span class="condition-any">matches every sign-in</span>'}</td>
+      <td class="muted ${p.conditions && Object.keys(p.conditions).length ? '' : 'condition-any'}">${esc(describeConditions(p.conditions))}</td>
       <td class="mono">${esc(p.requirement)}</td>
       <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
       <td>
@@ -397,6 +395,36 @@ function requirementsSection(result) {
   return `${heading}<p class="result-note muted">${esc(note)}</p>`;
 }
 
+function policyTraceSection(title, entries, emptyNote) {
+  const heading = `<h3 class="result-subhead">${esc(title)}</h3>`;
+
+  if (!entries.length) {
+    return `${heading}<p class="result-note muted">${esc(emptyNote)}</p>`;
+  }
+
+  const rows = entries.map((e) => `
+    <tr>
+      <td class="mono">${esc(e.id)}</td>
+      <td class="policy-name">${esc(e.name)}</td>
+      <td class="muted">${esc(e.why)}</td>
+    </tr>`).join('');
+
+  return `
+    ${heading}
+    <div class="tablewrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Policy</th>
+            <th scope="col">Why</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderResult() {
   const panel = document.getElementById('result-panel');
   if (!panel) return;
@@ -416,7 +444,12 @@ function renderResult() {
   panel.innerHTML = `
     ${signInSummary(signIn)}
     ${verdictBadge(result.verdict)}
-    ${requirementsSection(result)}`;
+    ${requirementsSection(result)}
+    ${policyTraceSection(
+      'Policies that matched',
+      result.matched,
+      'No policy matched this sign-in. With nothing in scope, there is nothing to enforce.',
+    )}`;
 }
 
 function onSignInSubmit(event) {
