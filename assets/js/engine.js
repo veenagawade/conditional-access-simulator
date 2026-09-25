@@ -98,15 +98,39 @@ export function describeConditions(conditions) {
     .join(' and ');
 }
 
+/**
+ * Why a policy did not apply to this sign-in.
+ *
+ * Two deliberate choices here, both about the person reading the answer during
+ * an incident:
+ *
+ * 1. EVERY failing condition is reported, not the first one. Naming a single
+ *    blocker invites someone to change that one attribute, re-evaluate, and
+ *    find the policy still does not match. A partial answer to "why did this
+ *    not apply?" is worse than a verbose one.
+ *
+ * 2. A disabled policy says whether it WOULD have matched. That is the
+ *    question you actually need answered before turning a policy on, and it
+ *    is what report-only mode exists to answer in real Conditional Access.
+ *    Reporting only "policy is disabled" leaves it hanging.
+ */
 function whyNotMatched(policy, signIn) {
-  if (!policy.enabled) return 'policy is disabled';
+  const failing = Object.entries(policy.conditions ?? {})
+    .filter(([key, value]) => signIn[key] !== value)
+    .map(([key, required]) => `${key} is ${signIn[key]}, rule requires ${required}`)
+    // Semicolons, not "and": each clause already contains a comma, so "and"
+    // does not read as a separator once there is more than one failure.
+    .join('; ');
 
-  const failing = Object.entries(policy.conditions)
-    .find(([key, value]) => signIn[key] !== value);
+  if (!policy.enabled) {
+    return failing
+      ? `policy is disabled, and ${failing}`
+      : 'policy is disabled — it would match this sign-in if enabled';
+  }
 
-  if (!failing) return 'all conditions met';
-  const [key, required] = failing;
-  return `${key} is ${signIn[key]}, rule requires ${required}`;
+  // Unreachable for an enabled policy: no failing conditions means it matched,
+  // so it would not be in the unmatched list. Kept as a guard.
+  return failing || 'all conditions met';
 }
 
 function requirementReason(status) {
