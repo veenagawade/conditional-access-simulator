@@ -80,9 +80,20 @@ export function resolveRequirement(requirement, signIn) {
  * @param {import('./fixtures.js').Policy[]} policies
  */
 
-/** "appSensitivity = high and deviceTrust = unmanaged" */
+/**
+ * "appSensitivity = high and deviceTrust = unmanaged"
+ *
+ * A policy with no conditions gets a sentence rather than an empty string. It
+ * is the configuration that most needs explaining — it matches every sign-in,
+ * and it is behind most accidental lockouts — so returning '' would leave the
+ * one case that matters silent. Every caller needs this phrase, which is why
+ * it lives here rather than in each of them.
+ */
 export function describeConditions(conditions) {
-  return Object.entries(conditions)
+  const entries = Object.entries(conditions ?? {});
+  if (!entries.length) return 'matches every sign-in';
+
+  return entries
     .map(([key, value]) => `${key} = ${value}`)
     .join(' and ');
 }
