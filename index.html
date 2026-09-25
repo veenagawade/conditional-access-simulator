@@ -165,6 +165,73 @@
       </form>
     </section>
 
+    <section class="card" aria-labelledby="signin-heading">
+      <h2 id="signin-heading">Simulate a sign-in</h2>
+      <p class="muted">
+        The five attributes the engine knows about. A sign-in always carries all five &mdash;
+        there is no <strong>Any</strong> here, unlike a policy condition. Nothing is sent
+        anywhere; the evaluation happens in this tab.
+      </p>
+
+      <form id="signin-form" class="signin-form">
+        <div class="field-grid">
+          <div class="field">
+            <label for="s-deviceType">Device type</label>
+            <select id="s-deviceType" name="deviceType">
+              <option value="laptop" selected>laptop</option>
+              <option value="phone">phone</option>
+              <option value="tablet">tablet</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="s-deviceTrust">Device trust</label>
+            <select id="s-deviceTrust" name="deviceTrust">
+              <option value="managed" selected>managed</option>
+              <option value="unmanaged">unmanaged</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="s-location">Location</label>
+            <select id="s-location" name="location">
+              <option value="trusted" selected>trusted</option>
+              <option value="foreign">foreign</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="s-riskLevel">Risk level</label>
+            <select id="s-riskLevel" name="riskLevel">
+              <option value="low" selected>low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="s-appSensitivity">App sensitivity</label>
+            <select id="s-appSensitivity" name="appSensitivity">
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high" selected>high</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn" id="signin-submit">Evaluate</button>
+          <button type="button" class="btn btn--sm" id="signin-reset">Reset sign-in</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="result-heading">
+      <h2 id="result-heading">Result</h2>
+      <div id="result-panel" role="status" aria-live="polite"></div>
+    </section>
+
     <section class="card" aria-labelledby="status-heading">
       <h2 id="status-heading">Status</h2>
 
