@@ -290,6 +290,57 @@ function signInSummary(s) {
   return `<ul class="signin-summary">${chips}</ul>`;
 }
 
+// The four verdicts, in the words a colleague would use.
+//
+// `blocked` and `blockedUnsatisfiable` are both red, deliberately. Both are
+// denials, and colouring one amber would suggest the user can clear it by
+// answering a prompt — which is exactly the misreading the four-verdict model
+// exists to prevent. The distinction lives in the sentence instead, because the
+// user's next move differs completely: one is "you are not allowed to do this",
+// the other is "you are not allowed to do this *from this device*".
+//
+// The raw verdict string is shown alongside the friendly label on purpose. It
+// is the engine's actual contract, and the page may as well teach it.
+const VERDICTS = {
+  allowed: {
+    label: 'Allowed',
+    kind: 'ok',
+    reading: 'No policy stands in the way, and every requirement in scope is already satisfied.',
+  },
+  challenge: {
+    label: 'Challenge',
+    kind: 'warn',
+    reading: 'Access rests on a requirement the sign-in cannot answer by itself. The user gets prompted.',
+  },
+  blocked: {
+    label: 'Blocked by policy',
+    kind: 'bad',
+    reading: 'A matching policy forbids this outright. No grant requirement overrides a block.',
+  },
+  blockedUnsatisfiable: {
+    label: 'Blocked — a requirement cannot be met',
+    kind: 'bad',
+    reading: 'A requirement the sign-in can answer came back unmet. The same user, on a compliant device, would be let in.',
+  },
+};
+
+function verdictBadge(verdict) {
+  const v = VERDICTS[verdict];
+
+  // An unrecognised verdict means the engine and this file have drifted apart.
+  // Say so loudly rather than rendering an empty box that looks like a pass.
+  if (!v) {
+    return `<p class="verdict-unknown">Unrecognised verdict: <code>${esc(verdict)}</code></p>`;
+  }
+
+  return `
+    <div class="verdict verdict--${v.kind}">
+      <span class="verdict-label">${esc(v.label)}</span>
+      <code class="verdict-code">${esc(verdict)}</code>
+    </div>
+    <p class="verdict-reading">${esc(v.reading)}</p>`;
+}
+
 function renderResult() {
   const panel = document.getElementById('result-panel');
   if (!panel) return;
@@ -299,10 +350,16 @@ function renderResult() {
     return;
   }
 
-  // Phase 5 step 1: the sign-in is captured and echoed back so it is never
-  // ambiguous which sign-in a verdict belongs to. The verdict itself arrives in
-  // the next step.
-  panel.innerHTML = signInSummary(signIn);
+  // Computed here, every render, from `signIn` and the live `policies` array.
+  // Nothing about this result is stored — which is what lets a policy edit
+  // re-run the evaluation later without any extra machinery.
+  const result = evaluate(signIn, policies);
+
+  // The sign-in stays above the verdict so it is never ambiguous which sign-in
+  // the verdict belongs to.
+  panel.innerHTML = `
+    ${signInSummary(signIn)}
+    ${verdictBadge(result.verdict)}`;
 }
 
 function onSignInSubmit(event) {
