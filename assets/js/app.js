@@ -1,12 +1,14 @@
-// Conditional Access Simulator — homepage bootstrap.
+// Conditional Access Simulator — homepage wiring.
 //
-// The homepage stays a status page until the real UI arrives in Phases 4–5.
-// What changed in Phase 3: it now runs the actual engine from engine.js against
-// the real fixtures, so "the homepage self-test passes" and "the engine matches
-// the spec" are the same claim rather than two unrelated ones.
+// The page has two editors and one answer: a policy set you can change, a
+// sign-in you can describe, and a result panel explaining what the engine did
+// with them. Every action re-renders both from state via render(), so the
+// verdict on screen always belongs to the policy set on screen.
 //
 // There is deliberately no evaluation logic in this file. One engine, one
-// definition, in engine.js.
+// definition, in engine.js. The self-test below runs that same engine against
+// the eight spec cases, so "the homepage self-test passes" and "the engine
+// matches the spec" are the same claim rather than two unrelated ones.
 
 import { evaluate, describeConditions } from './engine.js';
 import { createDefaultPolicies, nextPolicyId } from './defaults.js';
@@ -120,7 +122,7 @@ function onPolicyAction(event) {
     return;
   }
 
-  renderPolicies();
+  render();
 }
 
 function setResetButton() {
@@ -150,7 +152,7 @@ function onResetClick() {
   editingId = null;
   document.getElementById('policy-form')?.reset();
   setFormMode();
-  renderPolicies();
+  render();
 }
 
 function setFormMode() {
@@ -180,7 +182,7 @@ function startEdit(id) {
   form.elements.requirement.value = policy.requirement;
 
   setFormMode();
-  renderPolicies();
+  render();
   form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   form.elements.name.focus();
 }
@@ -192,7 +194,7 @@ function cancelEdit() {
   form?.reset();
   if (error) error.textContent = '';
   setFormMode();
-  renderPolicies();
+  render();
 }
 
 const CONDITION_KEYS = ['deviceType', 'deviceTrust', 'location', 'riskLevel', 'appSensitivity'];
@@ -233,7 +235,7 @@ function onPolicyFormSubmit(event) {
   if (error) error.textContent = '';
   form.reset();
   setFormMode();
-  renderPolicies();
+  render();
   form.elements.name.focus();
 }
 
@@ -425,23 +427,36 @@ function policyTraceSection(title, entries, emptyNote) {
     </div>`;
 }
 
+// The last HTML written to the result panel.
+//
+// #result-panel is an aria-live region, so every write is announced to a
+// screen reader. Now that a policy edit re-renders the result, actions that
+// change nothing about the outcome — renaming a policy, say — would otherwise
+// read the whole result aloud again. Comparing against panel.innerHTML would
+// not work: browsers normalise it, so the strings would never match and the
+// guard would silently never fire.
+let lastResultHtml = null;
+
 function renderResult() {
   const panel = document.getElementById('result-panel');
   if (!panel) return;
 
-  if (!signIn) {
-    panel.innerHTML = RESULT_EMPTY;
-    return;
-  }
+  const html = signIn ? resultHtml() : RESULT_EMPTY;
+  if (html === lastResultHtml) return;
 
+  lastResultHtml = html;
+  panel.innerHTML = html;
+}
+
+function resultHtml() {
   // Computed here, every render, from `signIn` and the live `policies` array.
   // Nothing about this result is stored — which is what lets a policy edit
-  // re-run the evaluation later without any extra machinery.
+  // re-run the evaluation without any extra machinery.
   const result = evaluate(signIn, policies);
 
   // The sign-in stays above the verdict so it is never ambiguous which sign-in
   // the verdict belongs to.
-  panel.innerHTML = `
+  return `
     ${signInSummary(signIn)}
     ${verdictBadge(result.verdict)}
     ${requirementsSection(result)}
@@ -468,7 +483,7 @@ function onSignInSubmit(event) {
     CONDITION_KEYS.map((key) => [key, String(data.get(key) ?? '')]),
   );
 
-  renderResult();
+  render();
 }
 
 function onSignInReset() {
@@ -477,12 +492,23 @@ function onSignInReset() {
 
   for (const key of CONDITION_KEYS) form.elements[key].value = DEFAULT_SIGNIN[key];
   signIn = null;
+  render();
+}
+
+// Every action re-renders everything from state.
+//
+// The policy list and the result panel are two views of the same two
+// variables, `policies` and `signIn`. Rendering them together is what makes a
+// stale verdict structurally impossible rather than merely unlikely — there is
+// no path that updates one without the other, and no cached result to forget
+// to invalidate.
+function render() {
+  renderPolicies();
   renderResult();
 }
 
 function init() {
-  renderPolicies();
-  renderResult();
+  render();
   setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);
   document.getElementById('policy-form')?.addEventListener('submit', onPolicyFormSubmit);

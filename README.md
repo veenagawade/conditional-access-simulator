@@ -29,23 +29,37 @@ step. The engine is the substance of the project; a build pipeline would only ad
 between a commit and a live site.
 
 ```
-index.html              entry point
-assets/css/styles.css   styles (system font stack, no external fonts)
-assets/js/app.js        bootstrap + evaluation engine
-netlify.toml            build config, security headers, deploy contexts
-docs/                   design spec and roadmap
+index.html              policy editor, sign-in builder, result panel, status card
+tests.html              engine tests and data-invariant checks
+assets/js/engine.js     the evaluation engine — matching, requirements, verdicts
+assets/js/fixtures.js   frozen test data: the spec's policies and its eight cases
+assets/js/defaults.js   the app's editable starting policy set
+assets/js/tests.js      test runner and data-invariant checks
+assets/js/app.js        page wiring only — no evaluation logic
+assets/css/             styles.css, tests.css (system font stack, no external fonts)
+netlify.toml            security headers, deploy contexts, pretty URLs
+docs/                   design spec and setup notes
 ```
+
+Two rules hold the structure together:
+
+1. **One engine, one definition.** There is no evaluation logic outside `engine.js`.
+2. **Fixtures are test data.** `fixtures.js` is frozen and read only by the tests. The app's
+   editable policy set comes from `defaults.js`, so editing policies in the browser cannot
+   affect what the tests assert.
 
 ## Running locally
 
-No tooling required — open `index.html` in a browser.
-
-For ES modules and correct path resolution, prefer a local server:
+Serve the repository over http. Opening `index.html` from the filesystem will **not** work —
+browsers refuse to load ES modules over `file://`, and the page comes up blank.
 
 ```bash
 python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
+
+VS Code's Live Server extension works too, as long as the workspace root is the repository
+folder — otherwise the absolute `/assets/...` paths 404.
 
 ## Deployment
 
@@ -66,7 +80,7 @@ external font, add that host to the policy rather than removing it.
 - [x] Phase 2 — evaluation engine: four verdicts, with a per-policy explanation trace
 - [x] Phase 3 — homepage wired to the real engine
 - [x] Phase 4 — policy editor: list, enable/disable, delete, add, edit, reset
-- [ ] Phase 5 — sign-in builder and result panel
+- [x] Phase 5 — sign-in builder and result panel, with live re-evaluation
 - [ ] Phase 6 — persistence (export/import JSON), polish, write-up
 
 ## Licence
