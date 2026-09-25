@@ -341,6 +341,62 @@ function verdictBadge(verdict) {
     <p class="verdict-reading">${esc(v.reading)}</p>`;
 }
 
+// Requirement status → the pill colours already used across the page.
+const REQUIREMENT_STATUS = {
+  satisfied:  { label: 'satisfied',  kind: 'ok' },
+  failed:     { label: 'failed',     kind: 'bad' },
+  unresolved: { label: 'unresolved', kind: 'warn' },
+};
+
+function requirementRow(r) {
+  const status = REQUIREMENT_STATUS[r.status] ?? { label: r.status, kind: 'wait' };
+  return `
+    <tr>
+      <td class="mono">${esc(r.type)}</td>
+      <td><span class="pill pill--${status.kind}">${esc(status.label)}</span></td>
+      <td class="muted">${esc(r.because)}</td>
+    </tr>`;
+}
+
+function requirementsSection(result) {
+  const heading = '<h3 class="result-subhead">Requirements</h3>';
+
+  if (result.requirements.length) {
+    return `
+      ${heading}
+      <div class="tablewrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">Requirement</th>
+              <th scope="col">Status</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody>${result.requirements.map(requirementRow).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // An empty list means one of two entirely different things, and saying which
+  // is the whole point of this section:
+  //
+  //   'blocked'  — the engine returned at step 2 of the decision order.
+  //                Requirements were never collected, because no grant control
+  //                overrides a block.
+  //   otherwise  — nothing matched. Every matched non-block policy contributes
+  //                a requirement type, so an empty list on any other verdict
+  //                means the matched set was empty.
+  //
+  // Rendering blank for both would collapse the distinction this project exists
+  // to explain.
+  const note = result.verdict === 'blocked'
+    ? 'Not evaluated — a block ends the decision before grant requirements are considered.'
+    : 'No requirements — no policy matched this sign-in.';
+
+  return `${heading}<p class="result-note muted">${esc(note)}</p>`;
+}
+
 function renderResult() {
   const panel = document.getElementById('result-panel');
   if (!panel) return;
@@ -359,7 +415,8 @@ function renderResult() {
   // the verdict belongs to.
   panel.innerHTML = `
     ${signInSummary(signIn)}
-    ${verdictBadge(result.verdict)}`;
+    ${verdictBadge(result.verdict)}
+    ${requirementsSection(result)}`;
 }
 
 function onSignInSubmit(event) {
