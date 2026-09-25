@@ -449,6 +449,14 @@ function renderResult() {
       'Policies that matched',
       result.matched,
       'No policy matched this sign-in. With nothing in scope, there is nothing to enforce.',
+    )}
+    ${policyTraceSection(
+      'Policies that did not match',
+      result.unmatched,
+      // Empty for two different reasons again, so it says which.
+      result.matched.length
+        ? 'Every policy matched this sign-in.'
+        : 'There are no policies to evaluate.',
     )}`;
 }
 
