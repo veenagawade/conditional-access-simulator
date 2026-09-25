@@ -316,3 +316,43 @@ tr.is-editing td { background: var(--warn-bg); }
   border-color: var(--bad);
   font-weight: 700;
 }
+
+/* ---------------------------------------------------------------------------
+   Phase 5 — sign-in builder and result panel
+   --------------------------------------------------------------------------- */
+
+.signin-form .field-grid { margin-bottom: 1rem; }
+
+.result-empty {
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* The sign-in the verdict belongs to, echoed above it. Without this the panel
+   answers a question you can no longer see, because the dropdowns may have
+   moved on since you pressed Evaluate. */
+.signin-summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.signin-summary li {
+  display: flex;
+  align-items: baseline;
+  gap: .45rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .2rem .8rem;
+}
+
+.attr-label {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.attr-value { font-weight: 600; }

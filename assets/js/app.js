@@ -239,13 +239,102 @@ function onPolicyFormSubmit(event) {
   form.elements.name.focus();
 }
 
+/* ------------------------------------------------------------------ *
+ * Sign-in builder
+ * ------------------------------------------------------------------ */
+
+// The same five attributes as CONDITION_KEYS, with display labels for the
+// summary. The difference that matters: a policy's `conditions` may leave a key
+// out, meaning "unconstrained". A sign-in never can — it always carries all
+// five, because it describes something that actually happened.
+const ATTRIBUTE_LABELS = {
+  deviceType: 'Device type',
+  deviceTrust: 'Device trust',
+  location: 'Location',
+  riskLevel: 'Risk level',
+  appSensitivity: 'App sensitivity',
+};
+
+// A plausible everyday sign-in: a corporate laptop on the office network,
+// opening something sensitive. Benign on every axis except the one that makes
+// the engine do work, so the first Evaluate press shows a real decision rather
+// than an empty "nothing matched".
+const DEFAULT_SIGNIN = {
+  deviceType: 'laptop',
+  deviceTrust: 'managed',
+  location: 'trusted',
+  riskLevel: 'low',
+  appSensitivity: 'high',
+};
+
+// null until the first Evaluate press.
+//
+// Note what is stored: the sign-in, not the result. The result panel recomputes
+// from `signIn` and `policies` every time it renders, so editing a policy and
+// re-rendering re-evaluates rather than redisplaying a verdict that is no
+// longer true. Storing the result object here would be the bug.
+let signIn = null;
+
+const RESULT_EMPTY = `
+  <p class="result-empty muted">
+    Describe a sign-in above and press <strong>Evaluate</strong>.
+  </p>`;
+
+function signInSummary(s) {
+  const chips = CONDITION_KEYS.map((key) => `
+    <li>
+      <span class="attr-label">${esc(ATTRIBUTE_LABELS[key])}</span>
+      <span class="attr-value mono">${esc(s[key])}</span>
+    </li>`).join('');
+
+  return `<ul class="signin-summary">${chips}</ul>`;
+}
+
+function renderResult() {
+  const panel = document.getElementById('result-panel');
+  if (!panel) return;
+
+  if (!signIn) {
+    panel.innerHTML = RESULT_EMPTY;
+    return;
+  }
+
+  // Phase 5 step 1: the sign-in is captured and echoed back so it is never
+  // ambiguous which sign-in a verdict belongs to. The verdict itself arrives in
+  // the next step.
+  panel.innerHTML = signInSummary(signIn);
+}
+
+function onSignInSubmit(event) {
+  event.preventDefault();
+
+  const data = new FormData(event.currentTarget);
+  signIn = Object.fromEntries(
+    CONDITION_KEYS.map((key) => [key, String(data.get(key) ?? '')]),
+  );
+
+  renderResult();
+}
+
+function onSignInReset() {
+  const form = document.getElementById('signin-form');
+  if (!form) return;
+
+  for (const key of CONDITION_KEYS) form.elements[key].value = DEFAULT_SIGNIN[key];
+  signIn = null;
+  renderResult();
+}
+
 function init() {
   renderPolicies();
+  renderResult();
   setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);
   document.getElementById('policy-form')?.addEventListener('submit', onPolicyFormSubmit);
   document.getElementById('policy-form-cancel')?.addEventListener('click', cancelEdit);
   document.getElementById('policy-reset')?.addEventListener('click', onResetClick);
+  document.getElementById('signin-form')?.addEventListener('submit', onSignInSubmit);
+  document.getElementById('signin-reset')?.addEventListener('click', onSignInReset);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.
