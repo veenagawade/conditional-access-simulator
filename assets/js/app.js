@@ -495,6 +495,84 @@ function onSignInReset() {
   render();
 }
 
+/* ------------------------------------------------------------------ *
+ * Scenarios
+ * ------------------------------------------------------------------ */
+
+// One click loads a sign-in and evaluates it, so the interesting verdicts are
+// reachable without knowing which five dropdowns to set. Chosen to cover all
+// four verdicts plus the stacking case.
+//
+// Scenarios describe SIGN-INS ONLY. None of them touches the policy set — a
+// button that silently rewrote your policies would be the worst kind of
+// surprise, and it would also make the verdicts here impossible to trust as a
+// demonstration of the policies actually on screen.
+const SCENARIOS = [
+  {
+    id: 'everyday',
+    label: 'Everyday sign-in',
+    note: 'Nothing matches. Access is simply allowed.',
+    signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted', riskLevel: 'low', appSensitivity: 'low' },
+  },
+  {
+    id: 'sensitive-office',
+    label: 'Sensitive app from the office',
+    note: 'One policy applies, and it asks for MFA.',
+    signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted', riskLevel: 'low', appSensitivity: 'high' },
+  },
+  {
+    id: 'personal-phone-finance',
+    label: 'Personal phone, finance app',
+    note: 'Two policies apply. The block wins outright.',
+    signIn: { deviceType: 'phone', deviceTrust: 'unmanaged', location: 'trusted', riskLevel: 'low', appSensitivity: 'high' },
+  },
+  {
+    id: 'travelling-personal-device',
+    label: 'Travelling on a personal device',
+    note: 'A requirement that cannot be met. This is a denial, not a prompt.',
+    feature: true,
+    signIn: { deviceType: 'phone', deviceTrust: 'unmanaged', location: 'foreign', riskLevel: 'low', appSensitivity: 'low' },
+  },
+  {
+    id: 'risky-abroad',
+    label: 'High-risk sign-in abroad',
+    note: 'Three policies stack. The managed device already satisfies one of them.',
+    signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'foreign', riskLevel: 'high', appSensitivity: 'high' },
+  },
+];
+
+function renderScenarios() {
+  const host = document.getElementById('scenario-buttons');
+  if (!host) return;
+
+  host.innerHTML = SCENARIOS.map((s) => `
+    <button type="button" class="scenario ${s.feature ? 'scenario--feature' : ''}"
+            data-scenario="${esc(s.id)}">
+      <span class="scenario-label">${esc(s.label)}</span>
+      <span class="scenario-note">${esc(s.note)}</span>
+    </button>`).join('');
+}
+
+function onScenarioClick(event) {
+  const button = event.target.closest('button[data-scenario]');
+  if (!button) return;
+
+  const scenario = SCENARIOS.find((s) => s.id === button.dataset.scenario);
+  if (!scenario) return;
+
+  const form = document.getElementById('signin-form');
+
+  // Set the form as well as the state. The dropdowns have to stay honest —
+  // they are what the visitor edits next, and a form that disagrees with the
+  // verdict above it is the thing the sign-in chips exist to prevent.
+  if (form) {
+    for (const key of CONDITION_KEYS) form.elements[key].value = scenario.signIn[key];
+  }
+
+  signIn = { ...scenario.signIn };
+  render();
+}
+
 // Every action re-renders everything from state.
 //
 // The policy list and the result panel are two views of the same two
@@ -508,6 +586,7 @@ function render() {
 }
 
 function init() {
+  renderScenarios();
   render();
   setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);
@@ -516,6 +595,7 @@ function init() {
   document.getElementById('policy-reset')?.addEventListener('click', onResetClick);
   document.getElementById('signin-form')?.addEventListener('submit', onSignInSubmit);
   document.getElementById('signin-reset')?.addEventListener('click', onSignInReset);
+  document.getElementById('scenario-buttons')?.addEventListener('click', onScenarioClick);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.
