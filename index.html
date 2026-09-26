@@ -188,8 +188,8 @@
           <div class="field">
             <label for="s-deviceType">Device type</label>
             <select id="s-deviceType" name="deviceType">
-              <option value="laptop" selected>laptop</option>
-              <option value="phone">phone</option>
+              <option value="laptop">laptop</option>
+              <option value="phone" selected>phone</option>
               <option value="tablet">tablet</option>
             </select>
           </div>
@@ -197,16 +197,16 @@
           <div class="field">
             <label for="s-deviceTrust">Device trust</label>
             <select id="s-deviceTrust" name="deviceTrust">
-              <option value="managed" selected>managed</option>
-              <option value="unmanaged">unmanaged</option>
+              <option value="managed">managed</option>
+              <option value="unmanaged" selected>unmanaged</option>
             </select>
           </div>
 
           <div class="field">
             <label for="s-location">Location</label>
             <select id="s-location" name="location">
-              <option value="trusted" selected>trusted</option>
-              <option value="foreign">foreign</option>
+              <option value="trusted">trusted</option>
+              <option value="foreign" selected>foreign</option>
               <option value="unknown">unknown</option>
             </select>
           </div>
@@ -223,12 +223,14 @@
           <div class="field">
             <label for="s-appSensitivity">App sensitivity</label>
             <select id="s-appSensitivity" name="appSensitivity">
-              <option value="low">low</option>
+              <option value="low" selected>low</option>
               <option value="medium">medium</option>
-              <option value="high" selected>high</option>
+              <option value="high">high</option>
             </select>
           </div>
         </div>
+
+        <p id="signin-pending" class="signin-pending" role="status" hidden></p>
 
         <div class="form-actions">
           <button type="submit" class="btn" id="signin-submit">Evaluate</button>
