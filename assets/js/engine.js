@@ -133,10 +133,40 @@ function whyNotMatched(policy, signIn) {
   return failing || 'all conditions met';
 }
 
-function requirementReason(status) {
-  if (status === 'satisfied') return 'the device is already managed';
-  if (status === 'failed') return 'the device is unmanaged and cannot satisfy this';
-  return 'the sign-in cannot say whether MFA can be completed';
+/**
+ * Why a requirement came out the way it did, in plain English.
+ *
+ * Keyed on the requirement TYPE as well as the status. The earlier version
+ * looked only at the status, and every one of its sentences named a device:
+ * 'satisfied' meant "the device is already managed", 'unresolved' meant "the
+ * sign-in cannot say whether MFA can be completed".
+ *
+ * That was correct, but only by accident. It held because managedDevice
+ * happens to be the only type that resolves and mfa the only one that does
+ * not. The moment a third requirement exists — a compliant-network check, a
+ * terms-of-use acceptance — the panel would state, with complete confidence,
+ * something about devices for a requirement that has nothing to do with
+ * devices. Wrong by construction rather than wrong yet.
+ *
+ * An unknown (type, status) pair gets a sentence that admits what it does not
+ * know, rather than borrowing a neighbour's.
+ */
+const REQUIREMENT_REASONS = {
+  managedDevice: {
+    satisfied: 'the device is already managed',
+    failed: 'the device is unmanaged and cannot satisfy this',
+    unresolved: 'the sign-in does not say whether the device is managed',
+  },
+  mfa: {
+    satisfied: 'multi-factor authentication has already been completed',
+    failed: 'multi-factor authentication cannot be completed',
+    unresolved: 'the sign-in cannot say whether MFA can be completed',
+  },
+};
+
+function requirementReason(type, status) {
+  return REQUIREMENT_REASONS[type]?.[status]
+    ?? `this requirement resolved to "${status}", and the engine has no explanation for it`;
 }
 
 export function evaluate(signIn, policies) {
@@ -160,7 +190,7 @@ export function evaluate(signIn, policies) {
   const types = [...new Set(matched.map(p => p.requirement))];
   const requirements = types.map(type => {
     const status = resolveRequirement(type, signIn);
-    return { type, status, because: requirementReason(status) };
+    return { type, status, because: requirementReason(type, status) };
   });
 
   if (requirements.some(r => r.status === 'failed')) return { verdict: 'blockedUnsatisfiable', requirements, ...trace };
