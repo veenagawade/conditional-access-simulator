@@ -255,30 +255,30 @@ const ATTRIBUTE_LABELS = {
   appSensitivity: 'App sensitivity',
 };
 
-// A plausible everyday sign-in: a corporate laptop on the office network,
-// opening something sensitive. Benign on every axis except the one that makes
-// the engine do work, so the first Evaluate press shows a real decision rather
-// than an empty "nothing matched".
+// The sign-in the page opens on: someone abroad on their own phone, reaching
+// for something harmless.
+//
+// It is the blockedUnsatisfiable case, and it is the default because it is the
+// one thing here a visitor should not have to go looking for. A requirement
+// that cannot be met is a denial, not a prompt — the page says so before
+// anyone clicks anything. The matching entry in SCENARIOS reuses this object,
+// so the default and the scenario cannot drift apart.
 const DEFAULT_SIGNIN = {
-  deviceType: 'laptop',
-  deviceTrust: 'managed',
-  location: 'trusted',
+  deviceType: 'phone',
+  deviceTrust: 'unmanaged',
+  location: 'foreign',
   riskLevel: 'low',
-  appSensitivity: 'high',
+  appSensitivity: 'low',
 };
 
-// null until the first Evaluate press.
+// Always a complete sign-in — there is no null state. The page evaluates on
+// load, so every render has something real to explain.
 //
 // Note what is stored: the sign-in, not the result. The result panel recomputes
 // from `signIn` and `policies` every time it renders, so editing a policy and
 // re-rendering re-evaluates rather than redisplaying a verdict that is no
 // longer true. Storing the result object here would be the bug.
-let signIn = null;
-
-const RESULT_EMPTY = `
-  <p class="result-empty muted">
-    Describe a sign-in above and press <strong>Evaluate</strong>.
-  </p>`;
+let signIn = { ...DEFAULT_SIGNIN };
 
 function signInSummary(s) {
   const chips = CONDITION_KEYS.map((key) => `
@@ -441,7 +441,7 @@ function renderResult() {
   const panel = document.getElementById('result-panel');
   if (!panel) return;
 
-  const html = signIn ? resultHtml() : RESULT_EMPTY;
+  const html = resultHtml();
   if (html === lastResultHtml) return;
 
   lastResultHtml = html;
@@ -491,7 +491,139 @@ function onSignInReset() {
   if (!form) return;
 
   for (const key of CONDITION_KEYS) form.elements[key].value = DEFAULT_SIGNIN[key];
-  signIn = null;
+  signIn = { ...DEFAULT_SIGNIN };
+  render();
+}
+
+/* ------------------------------------------------------------------ *
+ * Scenarios
+ * ------------------------------------------------------------------ */
+
+// One click loads a sign-in and evaluates it, so the interesting verdicts are
+// reachable without knowing which five dropdowns to set. Chosen to cover all
+// four verdicts plus the stacking case.
+//
+// Scenarios describe SIGN-INS ONLY. None of them touches the policy set — a
+// button that silently rewrote your policies would be the worst kind of
+// surprise, and it would also make the verdicts here impossible to trust as a
+// demonstration of the policies actually on screen.
+const SCENARIOS = [
+  {
+    id: 'everyday',
+    label: 'Everyday sign-in',
+    note: 'Nothing matches. Access is simply allowed.',
+    signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted', riskLevel: 'low', appSensitivity: 'low' },
+  },
+  {
+    id: 'sensitive-office',
+    label: 'Sensitive app from the office',
+    note: 'One policy applies, and it asks for MFA.',
+    signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted', riskLevel: 'low', appSensitivity: 'high' },
+  },
+  {
+    id: 'personal-phone-finance',
+    label: 'Personal phone, finance app',
+    note: 'Two policies apply. The block wins outright.',
+    signIn: { deviceType: 'phone', deviceTrust: 'unmanaged', location: 'trusted', riskLevel: 'low', appSensitivity: 'high' },
+  },
+  {
+    id: 'travelling-personal-device',
+    label: 'Travelling on a personal device',
+    note: 'A requirement that cannot be met. This is a denial, not a prompt.',
+    // The page opens on this one. Reusing DEFAULT_SIGNIN rather than repeating
+    // its five values keeps the landing state and this button in step.
+    signIn: DEFAULT_SIGNIN,
+  },
+  {
+    id: 'risky-abroad',
+    label: 'High-risk sign-in abroad',
+    note: 'Three policies stack. The managed device already satisfies one of them.',
+    signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'foreign', riskLevel: 'high', appSensitivity: 'high' },
+  },
+];
+
+/** The five dropdowns as they stand right now — the sign-in being composed. */
+function formSignIn() {
+  const form = document.getElementById('signin-form');
+  if (!form) return null;
+  return Object.fromEntries(
+    CONDITION_KEYS.map((key) => [key, form.elements[key].value]),
+  );
+}
+
+/**
+ * Which scenario, if any, the FORM currently describes.
+ *
+ * The form and `signIn` are two different things: the form is the sign-in
+ * being composed, `signIn` the one that was submitted. The scenario buttons
+ * load the form, so the highlight belongs to the form — click a scenario and
+ * it lights up immediately, before anything is evaluated.
+ *
+ * Derived, not stored. Storing the clicked id would go stale the moment
+ * someone edits a dropdown, and the highlight would claim a scenario the form
+ * no longer describes. Deriving it also means setting the five dropdowns by
+ * hand to match a scenario lights that scenario up, because at that point the
+ * form genuinely is that scenario.
+ */
+function activeScenarioId() {
+  const current = formSignIn();
+  if (!current) return null;
+  const match = SCENARIOS.find((s) =>
+    CONDITION_KEYS.every((key) => s.signIn[key] === current[key]));
+  return match ? match.id : null;
+}
+
+/**
+ * Whether the form has moved on from the sign-in the result describes.
+ *
+ * This is what gives the Evaluate button something to do. Without it, loading
+ * a scenario and seeing the old result sitting there reads as a bug rather
+ * than as "you have not pressed the button yet".
+ */
+function renderSignInPending() {
+  const el = document.getElementById('signin-pending');
+  if (!el) return;
+
+  const current = formSignIn();
+  const pending = current && CONDITION_KEYS.some((key) => current[key] !== signIn[key]);
+
+  el.textContent = pending ? 'Not evaluated yet — press Evaluate to see this sign-in.' : '';
+  el.hidden = !pending;
+}
+
+function renderScenarios() {
+  const host = document.getElementById('scenario-buttons');
+  if (!host) return;
+
+  const activeId = activeScenarioId();
+
+  host.innerHTML = SCENARIOS.map((s) => {
+    const active = s.id === activeId;
+    return `
+    <button type="button" class="scenario ${active ? 'is-active' : ''}"
+            data-scenario="${esc(s.id)}" aria-pressed="${active}">
+      <span class="scenario-label">${esc(s.label)}</span>
+      <span class="scenario-note">${esc(s.note)}</span>
+    </button>`;
+  }).join('');
+}
+
+function onScenarioClick(event) {
+  const button = event.target.closest('button[data-scenario]');
+  if (!button) return;
+
+  const scenario = SCENARIOS.find((s) => s.id === button.dataset.scenario);
+  if (!scenario) return;
+
+  const form = document.getElementById('signin-form');
+  if (!form) return;
+
+  // Loads the form and stops. `signIn` is not touched, so the result panel
+  // keeps describing the sign-in it was given until Evaluate is pressed.
+  // Auto-evaluating here would leave the Evaluate button with nothing to do
+  // except serve hand-edits, which is two interaction models in one form.
+  for (const key of CONDITION_KEYS) form.elements[key].value = scenario.signIn[key];
+
   render();
 }
 
@@ -505,6 +637,8 @@ function onSignInReset() {
 function render() {
   renderPolicies();
   renderResult();
+  renderScenarios();
+  renderSignInPending();
 }
 
 function init() {
@@ -516,6 +650,10 @@ function init() {
   document.getElementById('policy-reset')?.addEventListener('click', onResetClick);
   document.getElementById('signin-form')?.addEventListener('submit', onSignInSubmit);
   document.getElementById('signin-reset')?.addEventListener('click', onSignInReset);
+  document.getElementById('scenario-buttons')?.addEventListener('click', onScenarioClick);
+  // The highlight and the pending hint both describe the form, so they have to
+  // react to the form, not only to Evaluate.
+  document.getElementById('signin-form')?.addEventListener('change', render);
   setPill('check-js', 'yes', 'ok');
 
   // If the stylesheet were blocked by CSP the custom property would be missing.

@@ -323,11 +323,6 @@ tr.is-editing td { background: var(--warn-bg); }
 
 .signin-form .field-grid { margin-bottom: 1rem; }
 
-.result-empty {
-  margin: 0;
-  max-width: 60ch;
-}
-
 /* The sign-in the verdict belongs to, echoed above it. Without this the panel
    answers a question you can no longer see, because the dropdowns may have
    moved on since you pressed Evaluate. */
@@ -416,4 +411,66 @@ tr.is-editing td { background: var(--warn-bg); }
 .result-note {
   margin: 0;
   max-width: 62ch;
+}
+
+/* ---------------------------------------------------------------------------
+   Scenarios — one click to a sign-in worth looking at
+   --------------------------------------------------------------------------- */
+
+.scenarios {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.scenario-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: .6rem;
+}
+
+/* Quiet by default: these sit above the form, and a row of five loud buttons
+   would compete with Evaluate, which is the actual primary action. */
+.scenario {
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  padding: .7rem .9rem;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.scenario:hover { border-color: var(--accent); }
+.scenario:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.scenario-label { font-weight: 600; font-size: .92rem; }
+.scenario-note  { color: var(--muted); font-size: .82rem; line-height: 1.4; }
+
+/* Selection — the only filled button in the row, so there is never a question
+   which scenario is on screen.
+
+   An earlier version outlined one button permanently to draw attention to the
+   blockedUnsatisfiable case, which people correctly read as "this one is
+   selected". Permanent emphasis and transient selection cannot share a visual
+   language. That case is now simply the scenario the page opens on, so the
+   highlight means one thing only. */
+.scenario.is-active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.scenario.is-active .scenario-note { color: inherit; opacity: .85; }
+
+/* Shown when the form has moved on from the sign-in the result describes.
+   This is what stops a loaded-but-unevaluated scenario reading as a bug. */
+.signin-pending {
+  margin: 0 0 .8rem;
+  color: var(--warn);
+  font-size: .88rem;
+  font-weight: 600;
 }
