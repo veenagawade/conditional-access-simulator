@@ -7,6 +7,8 @@ An interactive, browser-only simulator of Conditional Access policy evaluation. 
 > to predict the behaviour of a production policy set.
 
 **Live site:** https://veena-ca-simulator.netlify.app/
+**Start here:** [How it works](docs/how-it-works.md) — the evaluation model, and the one decision
+the whole project turns on.
 
 ---
 
@@ -81,7 +83,9 @@ external font, add that host to the policy rather than removing it.
 - [x] Phase 3 — homepage wired to the real engine
 - [x] Phase 4 — policy editor: list, enable/disable, delete, add, edit, reset
 - [x] Phase 5 — sign-in builder and result panel, with live re-evaluation
-- [ ] Phase 6 — persistence (export/import JSON), polish, write-up
+- [x] Phase 6 — one-click scenarios, and the [how-it-works](docs/how-it-works.md) write-up
+- [ ] Phase 7 — user and group targeting, with exclusions (break-glass accounts)
+- [ ] Phase 8 — persistence (export/import JSON) and cleanup
 
 ## Licence
 
