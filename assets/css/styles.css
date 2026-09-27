@@ -103,7 +103,13 @@ h1, h2, h3 { font-weight: 800; letter-spacing: -.02em; }
   margin-bottom: 1.6rem;
 }
 
-.card h2 { margin-top: 0; font-size: 1.1rem; }
+.card h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
 
 .muted { color: var(--muted); }
 .mono { font-family: var(--font-mono); font-size: .9em; font-weight: 600; }
@@ -150,6 +156,9 @@ code {
   box-shadow: var(--shadow);
   padding: .55rem 1.1rem;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
 }
 .btn:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--ink); }
 .btn:active { transform: translateY(3px); box-shadow: none; }
@@ -244,6 +253,9 @@ code {
 .form-title {
   margin: 0 0 1rem;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
 }
 
 .field { margin-bottom: .9rem; }
@@ -472,7 +484,11 @@ tr.is-editing td { background: var(--warn-bg); }
   border: 2px solid var(--ink);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
+  gap: .65rem;
+  align-items: flex-start;
 }
+
+.scenario-text { display: flex; flex-direction: column; gap: .12rem; min-width: 0; }
 
 .scenario:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--ink); }
 .scenario:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -504,3 +520,64 @@ tr.is-editing td { background: var(--warn-bg); }
   font-size: .88rem;
   font-weight: 600;
 }
+
+/* ---------------------------------------------------------------------------
+   Icons
+   --------------------------------------------------------------------------- */
+
+/* The sprite itself is never rendered; only its symbols are referenced. */
+.sprite { display: none; }
+
+/* Sized in em so an icon tracks the text it sits beside. Stroked in
+   currentColor, which is what lets one definition serve a red verdict, an
+   amber warning and an ink button without variants. */
+.ico {
+  width: 1.05em;
+  height: 1.05em;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -.15em;
+}
+
+.card h2 .ico { width: 1.15em; height: 1.15em; }
+
+/* The verdict icon is the one place an icon is allowed to be loud. */
+.verdict .ico {
+  width: 1.5em;
+  height: 1.5em;
+  stroke-width: 2.4;
+  align-self: center;
+}
+
+/* The catch-all warning and the not-yet-evaluated hint. */
+.condition-any .ico,
+.signin-pending .ico { margin-right: .3em; }
+
+/* The scenario icon tile — the one place the decorative lane appears so far.
+   Colour here is chrome: it says nothing about the scenario's verdict, and it
+   is deliberately never drawn from the semantic tokens. */
+.scenario-ico {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--cream);
+}
+.scenario-ico .ico { width: 17px; height: 17px; vertical-align: 0; }
+
+.scenario:nth-child(1) .scenario-ico { background: var(--mint); }
+.scenario:nth-child(2) .scenario-ico { background: var(--sky); }
+.scenario:nth-child(3) .scenario-ico { background: var(--blush); }
+.scenario:nth-child(4) .scenario-ico { background: var(--lilac); }
+.scenario:nth-child(5) .scenario-ico { background: var(--cream); }
+
+/* On the selected card the tile keeps its decorative fill but needs a light
+   outline to stay visible against ink. */
+.scenario.is-active .scenario-ico { border-color: var(--bg); }
+.scenario.is-active .scenario-ico .ico { stroke: var(--ink); }

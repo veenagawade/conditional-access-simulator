@@ -54,6 +54,16 @@ function setText(id, text) {
  * ------------------------------------------------------------------ */
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/**
+ * One icon from the sprite in index.html.
+ *
+ * Every icon is decorative — the text beside it already says what it says —
+ * so they are aria-hidden and nothing here is understandable only by seeing
+ * one. Strokes are currentColor, so an icon inside a red verdict is red
+ * without a second definition.
+ */
+const ico = (name) => `<svg class="ico" aria-hidden="true"><use href="#ico-${name}"></use></svg>`;
+
 let policies = createDefaultPolicies();
 let editingId = null;
 let resetArmed = false;
@@ -71,7 +81,9 @@ function policyRow(p) {
     <tr class="${p.enabled ? '' : 'is-disabled'} ${p.id === editingId ? 'is-editing' : ''}">
       <td class="mono">${esc(p.id)}</td>
       <td class="policy-name">${esc(p.name)}</td>
-      <td class="muted ${p.conditions && Object.keys(p.conditions).length ? '' : 'condition-any'}">${esc(describeConditions(p.conditions))}</td>
+      <td class="muted ${p.conditions && Object.keys(p.conditions).length ? '' : 'condition-any'}">${
+        p.conditions && Object.keys(p.conditions).length ? '' : ico('warn')
+      }${esc(describeConditions(p.conditions))}</td>
       <td class="mono">${esc(p.requirement)}</td>
       <td><span class="pill pill--${p.enabled ? 'ok' : 'wait'}">${p.enabled ? 'enabled' : 'disabled'}</span></td>
       <td>
@@ -165,7 +177,10 @@ function setFormMode() {
   const editing = editingId !== null;
   form.classList.toggle('is-editing', editing);
   if (title) title.textContent = editing ? `Edit ${editingId}` : 'Add a policy';
-  if (submit) submit.textContent = editing ? 'Save changes' : 'Add policy';
+  // The button contains an icon as well as text, so the label lives in its own
+  // span. Setting textContent on the button itself would delete the icon.
+  const submitText = document.getElementById('policy-form-submit-text');
+  if (submitText) submitText.textContent = editing ? 'Save changes' : 'Add policy';
   if (cancel) cancel.hidden = !editing;
 }
 
@@ -303,21 +318,25 @@ function signInSummary(s) {
 // is the engine's actual contract, and the page may as well teach it.
 const VERDICTS = {
   allowed: {
+    icon: 'check',
     label: 'Allowed',
     kind: 'ok',
     reading: 'No policy stands in the way, and every requirement in scope is already satisfied.',
   },
   challenge: {
+    icon: 'question',
     label: 'Challenge',
     kind: 'warn',
     reading: 'Access rests on a requirement the sign-in cannot answer by itself. The user gets prompted.',
   },
   blocked: {
+    icon: 'ban',
     label: 'Blocked by policy',
     kind: 'bad',
     reading: 'A matching policy forbids this outright. No grant requirement overrides a block.',
   },
   blockedUnsatisfiable: {
+    icon: 'warn',
     label: 'Blocked — a requirement cannot be met',
     kind: 'bad',
     reading: 'A requirement the sign-in can answer came back unmet. The same user, on a compliant device, would be let in.',
@@ -335,6 +354,7 @@ function verdictBadge(verdict) {
 
   return `
     <div class="verdict verdict--${v.kind}">
+      ${ico(v.icon)}
       <span class="verdict-label">${esc(v.label)}</span>
       <code class="verdict-code">${esc(verdict)}</code>
     </div>
@@ -510,24 +530,28 @@ function onSignInReset() {
 const SCENARIOS = [
   {
     id: 'everyday',
+    icon: 'laptop',
     label: 'Everyday sign-in',
     note: 'Nothing matches. Access is simply allowed.',
     signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted', riskLevel: 'low', appSensitivity: 'low' },
   },
   {
     id: 'sensitive-office',
+    icon: 'shield',
     label: 'Sensitive app from the office',
     note: 'One policy applies, and it asks for MFA.',
     signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted', riskLevel: 'low', appSensitivity: 'high' },
   },
   {
     id: 'personal-phone-finance',
+    icon: 'card',
     label: 'Personal phone, finance app',
     note: 'Two policies apply. The block wins outright.',
     signIn: { deviceType: 'phone', deviceTrust: 'unmanaged', location: 'trusted', riskLevel: 'low', appSensitivity: 'high' },
   },
   {
     id: 'travelling-personal-device',
+    icon: 'plane',
     label: 'Travelling on a personal device',
     note: 'A requirement that cannot be met. This is a denial, not a prompt.',
     // The page opens on this one. Reusing DEFAULT_SIGNIN rather than repeating
@@ -536,6 +560,7 @@ const SCENARIOS = [
   },
   {
     id: 'risky-abroad',
+    icon: 'globe',
     label: 'High-risk sign-in abroad',
     note: 'Three policies stack. The managed device already satisfies one of them.',
     signIn: { deviceType: 'laptop', deviceTrust: 'managed', location: 'foreign', riskLevel: 'high', appSensitivity: 'high' },
@@ -587,7 +612,11 @@ function renderSignInPending() {
   const current = formSignIn();
   const pending = current && CONDITION_KEYS.some((key) => current[key] !== signIn[key]);
 
-  el.textContent = pending ? 'Not evaluated yet — press Evaluate to see this sign-in.' : '';
+  // innerHTML rather than textContent because of the icon. The string is a
+  // constant in this file; no user input reaches it.
+  el.innerHTML = pending
+    ? `${ico('warn')}Not evaluated yet — press Evaluate to see this sign-in.`
+    : '';
   el.hidden = !pending;
 }
 
@@ -602,8 +631,11 @@ function renderScenarios() {
     return `
     <button type="button" class="scenario ${active ? 'is-active' : ''}"
             data-scenario="${esc(s.id)}" aria-pressed="${active}">
-      <span class="scenario-label">${esc(s.label)}</span>
-      <span class="scenario-note">${esc(s.note)}</span>
+      <span class="scenario-ico">${ico(s.icon)}</span>
+      <span class="scenario-text">
+        <span class="scenario-label">${esc(s.label)}</span>
+        <span class="scenario-note">${esc(s.note)}</span>
+      </span>
     </button>`;
   }).join('');
 }
