@@ -12,6 +12,67 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <!-- Icon sprite.
+       One definition per icon, referenced from static markup here AND from the
+       strings app.js builds, via a <use> pointing at one of these symbol ids.
+       Writing the paths twice is how two copies drift apart; this is the same
+       problem as the attribute vocabulary living in three places, and not worth
+       creating a fourth instance of.
+
+       Same-document, so style-src/img-src in the CSP are not involved. Strokes
+       use currentColor, so an icon inside a red verdict is red for free.
+
+       Every icon here is decorative: the text beside it already says what it
+       says. They are aria-hidden, and nothing relies on one to be understood. -->
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="ico-scales" viewBox="0 0 24 24">
+      <path d="M12 3v18M7 21h10M12 6l-7 2 3 6a3.2 3.2 0 0 1-6 0l3-6M12 6l7 2-3 6a3.2 3.2 0 0 0 6 0l-3-6"/>
+    </symbol>
+    <symbol id="ico-shield" viewBox="0 0 24 24">
+      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>
+    </symbol>
+    <symbol id="ico-bolt" viewBox="0 0 24 24">
+      <path d="M13 2L4 14h7l-1 8 9-12h-7z"/>
+    </symbol>
+    <symbol id="ico-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7"/><path d="M16 16l5 5"/>
+    </symbol>
+    <symbol id="ico-pulse" viewBox="0 0 24 24">
+      <path d="M3 12h4l3-8 4 16 3-8h4"/>
+    </symbol>
+    <symbol id="ico-map" viewBox="0 0 24 24">
+      <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>
+    </symbol>
+    <symbol id="ico-arrow" viewBox="0 0 24 24">
+      <path d="M5 12h14M13 6l6 6-6 6"/>
+    </symbol>
+    <symbol id="ico-warn" viewBox="0 0 24 24">
+      <path d="M12 3l9 16H3z"/><path d="M12 9v4M12 16.4v.01"/>
+    </symbol>
+    <symbol id="ico-check" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>
+    </symbol>
+    <symbol id="ico-question" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.8-.9 1.4v.4M12 16.6v.01"/>
+    </symbol>
+    <symbol id="ico-ban" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>
+    </symbol>
+    <symbol id="ico-laptop" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/>
+    </symbol>
+    <symbol id="ico-card" viewBox="0 0 24 24">
+      <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+    </symbol>
+    <symbol id="ico-plane" viewBox="0 0 24 24">
+      <path d="M2 12l20-8-8 20-2-8z"/>
+    </symbol>
+    <symbol id="ico-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>
+    </symbol>
+  </svg>
+
+
   <header class="site-header">
     <div class="wrap">
       <h1 class="site-title">Veena's Conditional Access Simulator</h1>
@@ -25,7 +86,7 @@
   <main id="main" class="wrap">
 
     <section class="card" aria-labelledby="engine-heading">
-      <h2 id="engine-heading">How it decides</h2>
+      <h2 id="engine-heading"><svg class="ico" aria-hidden="true"><use href="#ico-scales"></use></svg>How it decides</h2>
       <p>
         Every enabled policy whose conditions match the sign-in is in scope. From there:
       </p>
@@ -52,7 +113,7 @@
     </section>
 
     <section class="card" aria-labelledby="policies-heading">
-      <h2 id="policies-heading">Policies</h2>
+      <h2 id="policies-heading"><svg class="ico" aria-hidden="true"><use href="#ico-shield"></use></svg>Policies</h2>
       <p class="muted">
         The policy set a sign-in is evaluated against. Every enabled policy whose conditions match
         is in scope.
@@ -159,14 +220,14 @@
         <p id="policy-form-error" class="form-error" role="alert"></p>
 
         <div class="form-actions">
-          <button type="submit" class="btn" id="policy-form-submit">Add policy</button>
+          <button type="submit" class="btn" id="policy-form-submit"><svg class="ico" aria-hidden="true"><use href="#ico-arrow"></use></svg><span id="policy-form-submit-text">Add policy</span></button>
           <button type="button" class="btn btn--sm" id="policy-form-cancel" hidden>Cancel</button>
         </div>
       </form>
     </section>
 
     <section class="card" aria-labelledby="signin-heading">
-      <h2 id="signin-heading">Simulate a sign-in</h2>
+      <h2 id="signin-heading"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>Simulate a sign-in</h2>
       <p class="muted">
         The five attributes the engine knows about. A sign-in always carries all five &mdash;
         there is no <strong>Any</strong> here, unlike a policy condition. Nothing is sent
@@ -174,7 +235,7 @@
       </p>
 
       <div class="scenarios">
-        <h3 class="form-title" id="scenarios-title">Try a scenario</h3>
+        <h3 class="form-title" id="scenarios-title"><svg class="ico" aria-hidden="true"><use href="#ico-bolt"></use></svg>Try a scenario</h3>
         <p class="muted field-hint">
           Each one loads a sign-in and evaluates it against the policies above. Change anything
           afterwards and press <strong>Evaluate</strong> again.
@@ -233,19 +294,19 @@
         <p id="signin-pending" class="signin-pending" role="status" hidden></p>
 
         <div class="form-actions">
-          <button type="submit" class="btn" id="signin-submit">Evaluate</button>
+          <button type="submit" class="btn" id="signin-submit"><svg class="ico" aria-hidden="true"><use href="#ico-arrow"></use></svg>Evaluate</button>
           <button type="button" class="btn btn--sm" id="signin-reset">Reset sign-in</button>
         </div>
       </form>
     </section>
 
     <section class="card" aria-labelledby="result-heading">
-      <h2 id="result-heading">Result</h2>
+      <h2 id="result-heading"><svg class="ico" aria-hidden="true"><use href="#ico-pulse"></use></svg>Result</h2>
       <div id="result-panel" role="status" aria-live="polite"></div>
     </section>
 
     <section class="card" aria-labelledby="status-heading">
-      <h2 id="status-heading">Status</h2>
+      <h2 id="status-heading"><svg class="ico" aria-hidden="true"><use href="#ico-check"></use></svg>Status</h2>
 
       <dl class="kv">
         <dt>Engine self-test</dt>
@@ -276,7 +337,7 @@
     </section>
 
     <section class="card" aria-labelledby="next-heading">
-      <h2 id="next-heading">Roadmap</h2>
+      <h2 id="next-heading"><svg class="ico" aria-hidden="true"><use href="#ico-map"></use></svg>Roadmap</h2>
       <ol class="steps">
         <li><s>Evaluation engine &mdash; four verdicts, with a per-policy explanation trace.</s> Done.</li>
         <li><s>Policy editor &mdash; create, edit, enable/disable and delete rules.</s> Done.</li>
