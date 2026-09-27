@@ -143,8 +143,18 @@ high-risk sign-in, which is the stacking case.
 | T7 | tablet, unmanaged, foreign, high risk, medium app | R3, R4 | `blockedUnsatisfiable` — R3 fails; mfa is moot |
 | T8 | laptop, managed, foreign, high risk, high app | R2, R3, R4 | `challenge` — mfa; managedDevice satisfied |
 
-T5 and T7 are the cases that would be wrong under a naive implementation. If those two pass, the
-engine is right.
+T4, T5 and T7 are the cases a naive implementation gets wrong — one that treats both grant
+requirements as merely outstanding instead of resolving what the sign-in can answer. It reports a
+challenge for T5 and T7, which are denials, and a challenge for T4, which is allowed because the
+device is already managed. Note that it errs in both directions.
+
+A subtler mistake — scoring `unresolved` before `failed` in §4 — breaks **T7 alone**, the only case
+where an unsatisfiable requirement and an unresolvable one appear together.
+
+*Corrected 27 Sep 2026: this section previously claimed the naive implementation broke T5 and T7
+only, and the project status notes claimed swapping the two scoring steps broke T5 and T7. Both
+were checked by building the two wrong engines and running the eight cases against them. Neither
+claim was right.*
 
 ---
 
