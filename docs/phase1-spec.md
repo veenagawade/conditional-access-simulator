@@ -180,13 +180,172 @@ actually gets asked during an incident.
 
 Recorded deliberately, not overlooked. Each is a candidate for a later phase.
 
-- **No user or group targeting.** Real policies are assigned to users and groups with exclusions.
-  This has real consequences — most notably that **emergency access ("break-glass") accounts must
-  be excluded from every policy**, the lesson behind more than one real tenant lockout. Worth
-  adding in a later phase; it is the single most interview-relevant feature missing.
+- ~~**No user or group targeting.**~~ **Closed by §9** (Phase 7). Policies are assigned to users
+  and groups with exclusions, and **emergency access ("break-glass") accounts are excluded from
+  every policy** — the lesson behind more than one real tenant lockout.
 - **No report-only mode.** Real policies run `on`, `report-only`, or `off`. Report-only is how
   changes are validated safely before enforcement. Currently `enabled` is a boolean.
 - **No session controls** (sign-in frequency, persistent browser).
 - **Risk is an input, not a calculation.** Deliberate — risk scoring is a different project.
 - **No policy ordering.** Correct: Conditional Access policies are unordered and all evaluated.
   This is an accurate model, not a simplification.
+
+---
+
+## 9. Targeting — users, groups and exclusions
+
+Added Phase 7. §8 listed "no user or group targeting" as the most interview-relevant gap. This
+section closes it, and it is the only part of the model where getting it wrong locks people out
+of a real tenant.
+
+---
+
+### 9.1 The sign-in gains a principal
+
+A sign-in has been five attributes since §1. It now also says *who*:
+
+```js
+{
+  user: 'alice',
+  groups: ['all-staff', 'engineering'],
+  deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted',
+  riskLevel: 'low', appSensitivity: 'low',
+}
+```
+
+`groups` is flat — no nesting, no dynamic membership. Real directories have both; neither changes
+the evaluation logic, which is what this project is about.
+
+### 9.2 A policy gains targeting
+
+```js
+{
+  id: 'R1',
+  name: 'Block everything during the incident',
+  enabled: true,
+  appliesTo: 'all',                      // or { users: [...], groups: [...] }
+  excludes: { users: ['bg-01'] },        // optional
+  conditions: {},
+  requirement: 'block',
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `appliesTo` | `'all'`, or an object naming users and/or groups. Being in **any** named user or group is enough — this is OR, unlike `conditions`, which is AND |
+| `excludes` | Users and groups the policy never applies to. Optional; absent means excludes nobody |
+
+**Absent `appliesTo` means `'all'`.** The four starter policies in §5 have no targeting and must
+keep behaving exactly as before, which is what T1–T8 continue to assert.
+
+**A sign-in with no principal matches only untargeted policies.** It cannot be included by name or
+group, because it has neither.
+
+### 9.3 The resolution rule — DECISION 4
+
+A policy is **in scope for a principal** when:
+
+```
+included AND NOT excluded
+```
+
+where `included` is `appliesTo === 'all'`, or the user is named, or any of the principal's groups
+is named; and `excluded` is the user being named in `excludes.users`, or any of their groups being
+named in `excludes.groups`.
+
+**Exclusion beats inclusion. Always. With no override.**
+
+Not when the user is also named explicitly in `appliesTo`. Not when the inclusion is more specific
+than the exclusion. Not when the policy is a block and the exclusion looks like a mistake. There is
+no "but I added them deliberately" path, and the absence of that path is the entire safety
+property.
+
+**Why this asymmetry is the point.** Emergency access — "break-glass" — accounts exist so that
+somebody can still sign in when a policy change has gone wrong. They work by being excluded from
+every policy. If exclusion could ever lose to an inclusion, the account that is supposed to be
+immune to a bad policy could be caught by one, and the tenant locks out the only people able to
+fix it. That is not hypothetical; it is the mechanism behind more than one real lockout.
+
+A rule that is unconditional is a rule you can reason about at 3am. One with exceptions is not.
+
+### 9.4 Where targeting sits in the decision order — DECISION 5
+
+Targeting is evaluated **before** conditions. §3 step 1 becomes:
+
+> Take every rule where `enabled` is true, **the principal is in scope**, and every condition
+> matches the sign-in.
+
+The ordering does not change *which* policies match — both orders produce the same set, because
+matching requires all three. It changes **what the explanation says**, and that is the entire
+reason to specify it.
+
+An excluded principal should be told:
+
+> `alice is excluded from this policy`
+
+and not:
+
+> `location is trusted, rule requires foreign`
+
+Both are true. Only the first is the answer. During an incident, "why did my break-glass account
+get through?" and "why did this block not catch that user?" are the same question, and an
+explanation that names a device attribute instead of the exclusion sends the reader to the wrong
+place. Explanation quality is a design requirement in this project (§7), not a nicety, so the
+order is fixed by the spec rather than left to the implementation.
+
+### 9.5 The principals
+
+A tiny directory. Four people, chosen so the interesting comparisons are one dropdown apart.
+
+| Id | Name | Groups |
+|---|---|---|
+| `alice` | Alice Fernandes | `all-staff`, `engineering` |
+| `sam` | Sam Okoro | `all-staff`, `engineering` |
+| `raj` | Raj Mehta | `all-staff`, `finance` |
+| `bg-01` | Emergency access 01 | *(none)* |
+
+**`bg-01` is in no groups at all**, and that is deliberate rather than lazy. Keeping break-glass
+accounts out of every group is itself standard practice: it means a group-targeted policy cannot
+catch the account by accident, before anyone even gets to exclusions. Belt and braces, and both
+are modelled here.
+
+### 9.6 Test cases
+
+**Write these before the engine, as in §6.** They use two extra policy sets so a tenant-wide block
+does not swamp everything else.
+
+```js
+TARGETED = [
+  P2: Require MFA for finance
+      appliesTo { groups: ['finance'] },  requirement mfa
+  P3: Require a managed device for engineering
+      appliesTo { groups: ['engineering'] }, excludes { users: ['alice'] },
+      requirement managedDevice
+]
+
+LOCKOUT = [
+  P1: Block everything during the incident
+      appliesTo 'all', excludes { users: ['bg-01'] }, conditions {}, requirement block
+]
+```
+
+| # | Set | Principal | Sign-in | Matched | Expected |
+|---|---|---|---|---|---|
+| T9 | TARGETED | `raj` | managed laptop, trusted, low, low | P2 | `challenge` — in finance |
+| T10 | TARGETED | `alice` | unmanaged phone, trusted, low, low | none | `allowed` — excluded from P3 |
+| T11 | TARGETED | `sam` | unmanaged phone, trusted, low, low | P3 | `blockedUnsatisfiable` |
+| T12 | LOCKOUT | `raj` | managed laptop, trusted, low, low | P1 | `blocked` |
+| T13 | LOCKOUT | `bg-01` | managed laptop, trusted, low, low | none | `allowed` — break-glass |
+
+**T10 and T11 are the same sign-in.** Same device, same location, same risk, same app. The only
+difference is who is signing in, and the outcomes are opposite: Alice is excluded from P3 and gets
+in; Sam is in the same group and is denied. If those two ever return the same verdict, exclusion is
+not being honoured.
+
+**T12 and T13 are also the same sign-in**, and they are the demonstration this whole section
+exists for: a tenant-wide block that stops everyone, and one emergency-access account that still
+gets through. T13 failing means a real tenant would be locked out with nobody able to undo it.
+
+T10/T11 and T12/T13 are the pairs to run first after any change to targeting.
+
+---
