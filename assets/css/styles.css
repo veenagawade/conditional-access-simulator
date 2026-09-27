@@ -85,14 +85,63 @@ h1, h2, h3 { font-weight: 800; letter-spacing: -.02em; }
   border-radius: var(--radius);
 }
 
+/* ---------------------------------------------------------------------------
+   Hero
+   --------------------------------------------------------------------------- */
 .site-header {
+  background: var(--sky);
   border-bottom: 3px solid var(--ink);
-  padding: 2.5rem 0 1.75rem;
+  padding: 2.25rem 0 2rem;
   margin-bottom: 2rem;
 }
 
-.site-title { margin: 0 0 .35rem; font-size: 1.6rem; letter-spacing: -0.01em; }
-.site-tagline { margin: 0; color: var(--muted); max-width: 60ch; }
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.site-title { margin: 0 0 .45rem; font-size: 1.7rem; line-height: 1.15; }
+.site-tagline { margin: 0; color: var(--text); opacity: .78; max-width: 46ch; }
+
+.hero-art svg { width: 100%; height: auto; display: block; }
+
+.hero-facts {
+  list-style: none;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+/* Decorative fills. None of these is a semantic token: a pastel here must
+   never be mistakable for a verdict colour. */
+.hero-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .82rem;
+  font-weight: 700;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: .2rem .7rem;
+  background: var(--bg);
+}
+.hero-fact--a { background: var(--cream); }
+.hero-fact--b { background: var(--mint); }
+.hero-fact--c { background: var(--blush); }
+
+/* Below the two-column breakpoint the illustration goes under the text rather
+   than away: it is the first thing that makes the page feel like this, and a
+   phone visitor should still get it. Capped so it never pushes the tool itself
+   off the first screen. */
+@media (max-width: 40rem) {
+  .hero { grid-template-columns: 1fr; gap: 1.1rem; }
+  .hero-art { max-width: 17rem; margin-inline: auto; }
+  .site-title { font-size: 1.45rem; }
+}
 
 .card {
   background: var(--surface);
@@ -168,7 +217,15 @@ code {
 .steps li { margin-bottom: .4rem; }
 
 /* Data tables — the policy list, and anything tabular that follows. */
-.tablewrap { overflow-x: auto; }
+
+/* position:relative is load-bearing, not tidiness. The Actions column header
+   holds a .visually-hidden span, which is position:absolute. Without a
+   positioned ancestor its containing block is the page itself, so on a narrow
+   screen it escaped this scroll container, landed at the table's full width,
+   and made the whole document scroll sideways — a 1px invisible span dragging
+   the page with it. Found by measuring document.scrollWidth at 390px; it had
+   been there since the policy table was built. */
+.tablewrap { overflow-x: auto; position: relative; }
 
 .data-table {
   border-collapse: collapse;

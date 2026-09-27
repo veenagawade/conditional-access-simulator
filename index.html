@@ -74,12 +74,61 @@
 
 
   <header class="site-header">
-    <div class="wrap">
-      <h1 class="site-title">Veena's Conditional Access Simulator</h1>
-      <p class="site-tagline">
-        A sandbox for policy evaluation logic. No tenant, no tokens, no real data &mdash;
-        everything runs in your browser.
-      </p>
+    <div class="wrap hero">
+      <div class="hero-text">
+        <h1 class="site-title">Veena's Conditional Access Simulator</h1>
+        <p class="site-tagline">
+          A sandbox for policy evaluation logic. No tenant, no tokens, no real data &mdash;
+          everything runs in your browser.
+        </p>
+        <!-- Three claims, each one checkable against the page below. Deliberately
+             no "8 / 8 passing" here: the Status card computes that from the real
+             self-test, and a hardcoded copy of a number would go stale silently. -->
+        <ul class="hero-facts">
+          <li class="hero-fact hero-fact--a">
+            <svg class="ico" aria-hidden="true"><use href="#ico-scales"></use></svg>
+            Four verdicts, not two
+          </li>
+          <li class="hero-fact hero-fact--b">
+            <svg class="ico" aria-hidden="true"><use href="#ico-shield"></use></svg>
+            Nothing leaves your browser
+          </li>
+          <li class="hero-fact hero-fact--c">
+            <svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>
+            Explains every policy, matched or not
+          </li>
+        </ul>
+      </div>
+
+      <!-- Decorative. A gate with a shield on it: requests arrive, something
+           decides. Drawn for this project; aria-hidden because it carries no
+           information the text does not. -->
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 122 Q75 104 150 117 T300 110 V150 H0Z"
+                fill="#8fd6a8" stroke="var(--ink)" stroke-width="3"/>
+          <rect x="86" y="54" width="15" height="68" rx="4"
+                fill="var(--cream)" stroke="var(--ink)" stroke-width="3"/>
+          <rect x="182" y="54" width="15" height="68" rx="4"
+                fill="var(--cream)" stroke="var(--ink)" stroke-width="3"/>
+          <path d="M86 62 Q141 22 197 62" stroke="var(--ink)" stroke-width="3"
+                fill="none" stroke-linecap="round"/>
+          <path d="M141 26 L158 33 V46 Q158 59 141 66 Q124 59 124 46 V33Z"
+                fill="var(--blush)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M134 45 l5 5 10 -11" stroke="var(--ink)" stroke-width="3" fill="none"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="36" cy="92" r="11" fill="var(--sky)" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="254" cy="84" r="9" fill="var(--lilac)" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="274" cy="106" r="7" fill="var(--blush)" stroke="var(--ink)" stroke-width="3"/>
+          <path d="M52 90 q14 -6 26 -2" stroke="var(--ink)" stroke-width="3"
+                stroke-dasharray="5 6" stroke-linecap="round" fill="none"/>
+          <path d="M242 86 q-14 -6 -26 -2" stroke="var(--ink)" stroke-width="3"
+                stroke-dasharray="5 6" stroke-linecap="round" fill="none"/>
+          <circle cx="268" cy="34" r="14" fill="#ffe27a" stroke="var(--ink)" stroke-width="3"/>
+          <path d="M28 42 a10 10 0 0 1 19 -4 a9 9 0 0 1 10 10 H30 a7 7 0 0 1 -2 -6Z"
+                fill="#fff" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+        </svg>
+      </div>
     </div>
   </header>
 
