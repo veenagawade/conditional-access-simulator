@@ -2,48 +2,72 @@
    Deliberately dependency-free: no CDN fonts, no CSS framework.
    That keeps the Content-Security-Policy in netlify.toml tight (default-src 'self'). */
 
-:root {
-  --bg: #ffffff;
-  --surface: #f7f8fa;
-  --border: #dfe3e8;
-  --text: #14181f;
-  --muted: #5b6472;
-  --accent: #1f5fbf;
-  --ok: #17694a;
-  --ok-bg: #e6f4ee;
-  --warn: #8a5a00;
-  --warn-bg: #fdf3e0;
-  --bad: #a52222;
-  --bad-bg: #fbeaea;
-  --radius: 10px;
-}
+/* ---------------------------------------------------------------------------
+   Design tokens — TWO LANES THAT NEVER MIX.
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #12151a;
-    --surface: #1a1f27;
-    --border: #2c333d;
-    --text: #e8ecf1;
-    --muted: #9aa5b4;
-    --accent: #7fb0ff;
-    --ok: #6fdcae;
-    --ok-bg: #123328;
-    --warn: #f0c069;
-    --warn-bg: #33280f;
-    --bad: #ff8f8f;
-    --bad-bg: #3a1c1c;
-  }
+   DECORATIVE  sky / cream / blush / mint / lilac
+               Icon tiles, badges, the hero. Chrome only. Never on a verdict,
+               a status pill, or a warning.
+
+   SEMANTIC    ok / warn / bad / accent / ink
+               Verdicts, statuses, the amber "matches every sign-in".
+               Never decorative.
+
+   The consequence worth stating: the primary button is INK, not red. Friendly
+   product design would make the call-to-action coral — here coral can only
+   ever mean "denied". Let the decorative lane touch red and the four-verdict
+   model, which is the point of the whole project, stops being readable.
+
+   Light only, deliberately. The cream-and-pastel palette is light-native and a
+   half-hearted dark variant of it would read worse than none.
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  /* ink and surfaces */
+  --ink: #1e2340;          /* the chunky outline, and all primary actions */
+  --page: #e9f2fc;         /* the page behind the cards */
+  --surface: #fffdf7;      /* card interiors — warm, not clinical */
+  --bg: #ffffff;           /* inner elements: inputs, chips, code, row buttons */
+  --text: #1e2340;
+  --muted: #5a6183;
+  --border: #dfe1ee;       /* QUIET rules only — table rows, dividers */
+
+  /* decorative — chrome only */
+  --sky: #c3e2ff;
+  --cream: #fff2c9;
+  --blush: #ffd8d0;
+  --mint: #cbeedb;
+  --lilac: #e0dcff;
+
+  /* semantic — meaning only */
+  --accent: #2b58c4;
+  --ok: #0e6f48;   --ok-bg: #d6f0e3;
+  --warn: #96560a; --warn-bg: #ffe9b8;
+  --bad: #b5312a;  --bad-bg: #ffdad3;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 3px 0 var(--ink);
+  --shadow-lg: 0 5px 0 var(--ink);
+
+  --font: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Cascadia Mono", monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--page);
   color: var(--text);
-  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font: 16px/1.6 var(--font);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Heavier and tighter than default — the weight is most of what makes this
+   register read as friendly rather than corporate. */
+h1, h2, h3 { font-weight: 800; letter-spacing: -.02em; }
 
 .wrap { width: min(860px, 92vw); margin-inline: auto; }
 
@@ -62,7 +86,7 @@ body {
 }
 
 .site-header {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 3px solid var(--ink);
   padding: 2.5rem 0 1.75rem;
   margin-bottom: 2rem;
 }
@@ -72,22 +96,23 @@ body {
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 3px solid var(--ink);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
   padding: 1.25rem 1.4rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.6rem;
 }
 
 .card h2 { margin-top: 0; font-size: 1.1rem; }
 
 .muted { color: var(--muted); }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; }
+.mono { font-family: var(--font-mono); font-size: .9em; font-weight: 600; }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
   padding: .08em .38em;
   font-size: .88em;
 }
@@ -105,26 +130,29 @@ code {
   display: inline-block;
   padding: .12em .6em;
   border-radius: 999px;
-  font-size: .82rem;
-  font-weight: 600;
-  border: 1px solid transparent;
+  font-size: .8rem;
+  font-weight: 800;
+  border: 2px solid transparent;
 }
 .pill--ok   { background: var(--ok-bg);   color: var(--ok);   border-color: currentColor; }
 .pill--warn { background: var(--warn-bg); color: var(--warn); border-color: currentColor; }
 .pill--bad  { background: var(--bad-bg);  color: var(--bad);  border-color: currentColor; }
 .pill--wait { background: transparent;    color: var(--muted); border-color: var(--border); }
 
+/* Ink, not red. See the note on the token lanes above. */
 .btn {
   font: inherit;
-  font-weight: 600;
+  font-weight: 800;
   color: var(--bg);
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
   padding: .55rem 1.1rem;
   cursor: pointer;
 }
-.btn:hover { filter: brightness(1.08); }
+.btn:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--ink); }
+.btn:active { transform: translateY(3px); box-shadow: none; }
 .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 .steps { padding-left: 1.2rem; }
@@ -142,34 +170,34 @@ code {
 .data-table td {
   text-align: left;
   padding: .55rem .6rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--border);
   vertical-align: top;
 }
 .data-table th {
-  font-size: .78rem;
+  font-size: .72rem;
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .06em;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 800;
 }
 .data-table tbody tr:last-child td { border-bottom: none; }
-.data-table .policy-name { font-weight: 600; }
+.data-table .policy-name { font-weight: 700; }
 .data-table tr.is-disabled .policy-name,
 .data-table tr.is-disabled td { opacity: .55; }
 
 /* Small, quiet button for use inside table rows. */
 .btn--sm {
-  padding: .26rem .7rem;
-  font-size: .82rem;
-  color: var(--accent);
-  background: transparent;
-  border-color: var(--border);
+  padding: .24rem .7rem;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--bg);
+  border-color: var(--ink);
+  border-radius: 8px;
+  box-shadow: none;
   white-space: nowrap;
 }
-.btn--sm:hover {
-  filter: none;
-  border-color: var(--accent);
-}
+.btn--sm:hover { transform: none; box-shadow: none; background: var(--cream); }
 
 /* Destructive variant — same quiet shape, warning colour. */
 .btn--danger { color: var(--bad); }
@@ -199,7 +227,7 @@ code {
 }
 
 .site-footer {
-  border-top: 1px solid var(--border);
+  border-top: 3px solid var(--ink);
   padding: 1.5rem 0 3rem;
   font-size: .88rem;
 }
@@ -210,7 +238,7 @@ code {
 .policy-form {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--border);
+  border-top: 2px solid var(--border);
 }
 
 .form-title {
@@ -238,8 +266,8 @@ code {
   padding: .45rem .6rem;
   color: var(--text);
   background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 7px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
 }
 
 .field input[type="text"]:focus-visible,
@@ -252,8 +280,8 @@ code {
 .conditions {
   margin: 0 0 1rem;
   padding: .9rem 1rem .2rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 2px dashed var(--ink);
+  border-radius: var(--radius-sm);
 }
 
 .field-hint {
@@ -280,7 +308,7 @@ code {
 
 .condition-any {
   color: var(--warn);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .form-actions {
@@ -294,8 +322,8 @@ code {
 .policy-form.is-editing {
   padding: 1.1rem 1.1rem .4rem;
   margin-top: 1.25rem;
-  border: 2px solid var(--accent);
-  border-radius: var(--radius);
+  border: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
   background: var(--bg);
 }
 
@@ -340,9 +368,9 @@ tr.is-editing td { background: var(--warn-bg); }
   align-items: baseline;
   gap: .45rem;
   background: var(--bg);
-  border: 1px solid var(--border);
+  border: 2px solid var(--ink);
   border-radius: 999px;
-  padding: .2rem .8rem;
+  padding: .18rem .8rem;
 }
 
 .attr-label {
@@ -360,9 +388,9 @@ tr.is-editing td { background: var(--warn-bg); }
   align-items: baseline;
   gap: .6rem;
   margin-top: 1.1rem;
-  padding: .85rem 1.1rem;
-  border: 2px solid currentColor;
-  border-radius: var(--radius);
+  padding: .9rem 1.1rem;
+  border: 3px solid currentColor;
+  border-radius: var(--radius-sm);
 }
 
 .verdict-label {
@@ -441,11 +469,12 @@ tr.is-editing td { background: var(--warn-bg); }
   cursor: pointer;
   color: var(--text);
   background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
 }
 
-.scenario:hover { border-color: var(--accent); }
+.scenario:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--ink); }
 .scenario:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 .scenario-label { font-weight: 600; font-size: .92rem; }
@@ -459,10 +488,11 @@ tr.is-editing td { background: var(--warn-bg); }
    selected". Permanent emphasis and transient selection cannot share a visual
    language. That case is now simply the scenario the page opens on, so the
    highlight means one thing only. */
+/* Ink again, for the same reason the primary button is ink. */
 .scenario.is-active {
   color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--ink);
+  border-color: var(--ink);
 }
 .scenario.is-active .scenario-note { color: inherit; opacity: .85; }
 
