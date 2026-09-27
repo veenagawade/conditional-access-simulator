@@ -20,7 +20,58 @@
  */
 export function matches(policy, signIn) {
   if (!policy.enabled) return false;
+  if (!inScope(policy, signIn)) return false;
   return Object.entries(policy.conditions).every(([key, value]) => signIn[key] === value);
+}
+
+/* ------------------------------------------------------------------ *
+ * Targeting — spec §9
+ * ------------------------------------------------------------------ */
+
+/**
+ * Does this target — an `appliesTo` or an `excludes` — name the principal?
+ *
+ * OR, not AND: being any one of the named users, or in any one of the named
+ * groups, is enough. That is the opposite of `conditions`, where every entry
+ * must hold. Worth keeping straight — reading one as the other is how a policy
+ * ends up applying to nobody, or to everybody.
+ */
+function namesPrincipal(target, signIn) {
+  if (!target) return false;
+  if (signIn.user && (target.users ?? []).includes(signIn.user)) return true;
+  const named = target.groups ?? [];
+  return (signIn.groups ?? []).some((group) => named.includes(group));
+}
+
+/** Absent `appliesTo` means 'all' — spec §9.2, so §5's untargeted rules are unchanged. */
+function isIncluded(policy, signIn) {
+  const appliesTo = policy.appliesTo ?? 'all';
+  return appliesTo === 'all' || namesPrincipal(appliesTo, signIn);
+}
+
+function isExcluded(policy, signIn) {
+  return namesPrincipal(policy.excludes, signIn);
+}
+
+/**
+ * Is this policy in scope for whoever is signing in? Spec §9.3.
+ *
+ *     included AND NOT excluded
+ *
+ * **Exclusion beats inclusion, always, with no override.** Not when the user is
+ * also named explicitly in appliesTo. Not when the inclusion is more specific.
+ * Not when the exclusion looks like a mistake.
+ *
+ * That unconditionality is the entire safety property. Emergency access
+ * accounts work by being excluded from every policy; if exclusion could ever
+ * lose to an inclusion, the account meant to be immune to a bad policy could be
+ * caught by one, and the tenant locks out the only people able to fix it.
+ *
+ * If you are ever tempted to add an exception here, that is the thing you would
+ * be breaking.
+ */
+export function inScope(policy, signIn) {
+  return isIncluded(policy, signIn) && !isExcluded(policy, signIn);
 }
 
 /**
@@ -115,6 +166,8 @@ export function describeConditions(conditions) {
  *    Reporting only "policy is disabled" leaves it hanging.
  */
 function whyNotMatched(policy, signIn) {
+  const who = signIn.user ?? 'this sign-in';
+
   const failing = Object.entries(policy.conditions ?? {})
     .filter(([key, value]) => signIn[key] !== value)
     .map(([key, required]) => `${key} is ${signIn[key]}, rule requires ${required}`)
@@ -122,14 +175,31 @@ function whyNotMatched(policy, signIn) {
     // does not read as a separator once there is more than one failure.
     .join('; ');
 
+  // Targeting is reported ahead of conditions — spec §9.4. Both answers can be
+  // true at once, and only this one is useful: during an incident, "why did
+  // that account get through the block?" is answered by the exclusion, not by
+  // some device attribute that also happened not to match.
+  const targeting = isExcluded(policy, signIn)
+    ? `${who} is excluded from this policy`
+    : isIncluded(policy, signIn)
+      ? ''
+      // Phrased from the principal, like the exclusion line, so both read
+      // correctly on their own AND after "policy is disabled, and ...".
+      : `${who} is not in scope for this policy`;
+
   if (!policy.enabled) {
-    return failing
-      ? `policy is disabled, and ${failing}`
-      : 'policy is disabled — it would match this sign-in if enabled';
+    // "It would match if enabled" has to account for targeting too, or a
+    // disabled policy that excludes you would claim it would catch you.
+    if (!targeting && !failing) {
+      return 'policy is disabled — it would match this sign-in if enabled';
+    }
+    return `policy is disabled, and ${[targeting, failing].filter(Boolean).join('; ')}`;
   }
 
-  // Unreachable for an enabled policy: no failing conditions means it matched,
-  // so it would not be in the unmatched list. Kept as a guard.
+  if (targeting) return targeting;
+
+  // Unreachable for an enabled, in-scope policy: no failing conditions means it
+  // matched, so it would not be in the unmatched list. Kept as a guard.
   return failing || 'all conditions met';
 }
 

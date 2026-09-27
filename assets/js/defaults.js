@@ -55,3 +55,34 @@ export function nextPolicyId(policies) {
   const highest = numbers.length ? Math.max(...numbers) : 0;
   return `R${highest + 1}`;
 }
+
+/**
+ * The app's directory of principals — spec §9.5.
+ *
+ * A frozen const, not a function, and the difference from createDefaultPolicies()
+ * above is deliberate. Policies are editable: the user adds, edits and deletes
+ * them, so every caller needs its own copy or "reset to defaults" hands back a
+ * mutated set. The directory is read-only in this app — you pick who is signing
+ * in, you do not invent people — so one shared frozen copy is honest and
+ * cheaper. If a later phase adds a principal editor, this becomes a function
+ * for exactly the reason that one is.
+ *
+ * Duplicated from fixtures.js on purpose, under the same rule as the policies:
+ * if the tests imported the app's data, changing a principal here would
+ * silently change what the tests assert.
+ *
+ * bg-01 is in no groups at all. Keeping break-glass accounts out of every group
+ * means a group-targeted policy cannot catch the account by accident, before
+ * anyone even reaches exclusions.
+ *
+ * @type {readonly {id: string, name: string, groups: readonly string[]}[]}
+ */
+export const PRINCIPALS = Object.freeze([
+  Object.freeze({ id: 'alice', name: 'Alice Fernandes',     groups: Object.freeze(['all-staff', 'engineering']) }),
+  Object.freeze({ id: 'sam',   name: 'Sam Okoro',           groups: Object.freeze(['all-staff', 'engineering']) }),
+  Object.freeze({ id: 'raj',   name: 'Raj Mehta',           groups: Object.freeze(['all-staff', 'finance']) }),
+  Object.freeze({ id: 'bg-01', name: 'Emergency access 01', groups: Object.freeze([]) }),
+]);
+
+/** The principal the app starts on. An ordinary member of staff, not the break-glass account. */
+export const DEFAULT_PRINCIPAL_ID = 'alice';

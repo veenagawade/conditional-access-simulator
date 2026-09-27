@@ -12,7 +12,7 @@
 
 import { evaluate, describeConditions } from './engine.js';
 import { createDefaultPolicies, nextPolicyId } from './defaults.js';
-import { POLICIES, CASES } from './fixtures.js';
+import { POLICIES, ALL_CASES } from './fixtures.js';
 
 /* ------------------------------------------------------------------ *
  * Engine self-test — the eight cases from docs/phase1-spec.md §6
@@ -20,10 +20,11 @@ import { POLICIES, CASES } from './fixtures.js';
 function runSelfTest() {
   const failures = [];
 
-  for (const c of CASES) {
+  for (const c of ALL_CASES) {
     let verdict;
     try {
-      verdict = evaluate(c.signIn, POLICIES).verdict;
+      // Targeting cases carry their own policy set; §6 cases use the starter rules.
+      verdict = evaluate(c.signIn, c.policies ?? POLICIES).verdict;
     } catch (err) {
       failures.push(`${c.id} threw: ${err.message}`);
       continue;
@@ -33,7 +34,7 @@ function runSelfTest() {
     }
   }
 
-  return { passed: CASES.length - failures.length, total: CASES.length, failures };
+  return { passed: ALL_CASES.length - failures.length, total: ALL_CASES.length, failures };
 }
 
 /* ------------------------------------------------------------------ *
