@@ -5,7 +5,11 @@
 // scripts are refused. Local dev servers send no CSP, so an inline version
 // works locally and silently fails once deployed.
 
-import { POLICIES, CASES } from './fixtures.js';
+// CASES as well as ALL_CASES: the freeze invariant below asserts on the §6
+// fixtures specifically, and removing this import made it throw from inside a
+// try/catch whose catch referenced the same missing binding — a check that
+// cannot report a failure because it cannot run.
+import { POLICIES, CASES, ALL_CASES } from './fixtures.js';
 import { createDefaultPolicies, nextPolicyId } from './defaults.js';
 import { evaluate } from './engine.js';
 
@@ -15,13 +19,18 @@ const rows = document.getElementById('rows');
 const summary = document.getElementById('summary');
 let passed = 0;
 
-for (const c of CASES) {
+/** case id -> did it pass. Read by the summary below. */
+const results = new Map();
+
+for (const c of ALL_CASES) {
   const problems = [];
   let actual = '—';
   let trace = '';
 
   try {
-    const r = evaluate(c.signIn, POLICIES);
+    // Targeting cases bring their own policy set; spec §6 cases use the
+    // four starter rules.
+    const r = evaluate(c.signIn, c.policies ?? POLICIES);
 
     actual = r?.verdict ?? '(no verdict)';
     if (actual !== c.expectedVerdict) {
@@ -38,27 +47,36 @@ for (const c of CASES) {
       if (got !== want) problems.push(`outstanding [${got}], expected [${want}]`);
     }
 
-    // Trace — reported, never failed. Built in the second pass.
+    // Which policies applied. This was reported but not asserted while the
+    // trace was being built in Phase 2; it has agreed with the spec on all
+    // eight cases ever since, and for targeting it is the assertion that
+    // matters — T10 and T11 differ only in which policy matched.
     if (Array.isArray(r?.matched)) {
       const got = r.matched.map((m) => m.id).sort().join(',');
       const want = [...c.expectedMatched].sort().join(',');
-      trace = got === want
-        ? `matched [${got}] ✓`
-        : `matched [${got}] — spec says [${want}] (not failing the test yet)`;
+      trace = `matched [${got || '—'}]`;
+      if (got !== want) problems.push(`matched [${got || '—'}], expected [${want || '—'}]`);
     } else {
-      trace = 'no trace yet';
+      problems.push('no matched trace');
     }
   } catch (err) {
     problems.push(esc(err.message));
   }
 
   const ok = problems.length === 0;
+  results.set(c.id, ok);
   if (ok) passed++;
 
   rows.insertAdjacentHTML('beforeend', `
     <tr class="${ok ? '' : 'fail'}">
       <td class="mono">${c.id}</td>
-      <td>${esc(c.description)}<div class="trace">${esc(trace)}</div></td>
+      <td>
+        ${esc(c.description)}
+        ${c.signIn.user ? `<div class="trace">as <strong>${esc(c.signIn.user)}</strong>${
+          c.signIn.groups?.length ? ` — groups: ${esc(c.signIn.groups.join(', '))}` : ' — no groups'
+        }</div>` : ''}
+        <div class="trace">${esc(trace)}</div>
+      </td>
       <td class="mono">${esc(c.expectedVerdict)}</td>
       <td class="mono">${esc(actual)}</td>
       <td>
@@ -68,10 +86,32 @@ for (const c of CASES) {
     </tr>`);
 }
 
-const all = passed === CASES.length;
+const all = passed === ALL_CASES.length;
+
+// A failing test page on a live site normally means something broke. Here it
+// can also mean the spec is deliberately ahead of the engine: §9's targeting
+// cases were written before any engine code, which is the whole point of
+// writing them. Say which, so the page never looks like a regression when it
+// is actually the method working.
+const targeting = ALL_CASES.filter((c) => c.policies);   // §9 cases carry their own set
+const core = ALL_CASES.filter((c) => !c.policies);      // §6 cases use the starter rules
+const coreGreen = core.every((c) => results.get(c.id));
+const targetingFailing = targeting.filter((c) => !results.get(c.id)).length;
+
+// Every failure is a §9 case, and §6 is untouched: the spec is ahead of the
+// engine on purpose, not broken.
+const specAhead = !all && coreGreen;
+
 summary.innerHTML =
-  `<span class="pill pill--${all ? 'ok' : 'bad'}">${passed} / ${CASES.length} passing</span>` +
-  (all ? ' — engine matches the spec.' : ' — keep going.');
+  `<span class="pill pill--${all ? 'ok' : specAhead ? 'warn' : 'bad'}">` +
+  `${passed} / ${ALL_CASES.length} passing</span>` +
+  (all
+    ? ' — engine matches the spec.'
+    : specAhead
+      ? ` — §6 is green (${core.length} / ${core.length}). ${targetingFailing} of the ` +
+        `${targeting.length} targeting cases fail: spec §9 was written before the engine, ` +
+        'and they stay red until it is built.'
+      : ' — keep going.');
 
 /* ------------------------------------------------------------------ *
  * Data invariants — properties of the data, not the engine

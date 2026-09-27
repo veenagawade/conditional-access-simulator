@@ -30,6 +30,9 @@ function deepFreeze(value) {
 
 /**
  * @typedef {object} SignIn
+ * @property {string}   [user]    Principal id. Absent means "no principal" — such a
+ *                                sign-in can only match untargeted policies (spec §9.2).
+ * @property {string[]} [groups]  Flat group ids. No nesting; see spec §9.1.
  * @property {'laptop'|'phone'|'tablet'} deviceType
  * @property {'managed'|'unmanaged'}     deviceTrust
  * @property {'trusted'|'foreign'|'unknown'} location
@@ -43,6 +46,11 @@ function deepFreeze(value) {
  * @property {string}  name
  * @property {boolean} enabled
  * @property {Partial<SignIn>} conditions   Attributes that must match. AND. Absent = unconstrained.
+ * @property {'all'|{users?: string[], groups?: string[]}} [appliesTo]
+ *   Who the policy targets. Being in ANY named user or group is enough — this is OR,
+ *   unlike conditions. Absent means 'all' (spec §9.2).
+ * @property {{users?: string[], groups?: string[]}} [excludes]
+ *   Who it never applies to. Exclusion beats inclusion, always (spec §9.3).
  * @property {'block'|'mfa'|'managedDevice'} requirement
  */
 
@@ -155,3 +163,163 @@ export const CASES = deepFreeze([
     expectedMatched: ['R2', 'R3', 'R4'],
   },
 ]);
+
+/* ===================================================================== *
+ * Phase 7 — targeting. Spec §9.
+ *
+ * Written before the engine understood any of it, so T9–T13 were failing
+ * when they were committed. That is the point: the model is reviewed as a
+ * table before it is argued with as an implementation.
+ * ===================================================================== */
+
+/**
+ * @typedef {object} Principal
+ * @property {string}   id
+ * @property {string}   name
+ * @property {string[]} groups
+ */
+
+/**
+ * The directory. Four people, chosen so the interesting comparisons are one
+ * dropdown apart.
+ *
+ * bg-01 is in NO groups, deliberately. Keeping break-glass accounts out of
+ * every group means a group-targeted policy cannot catch the account by
+ * accident, before anyone even reaches exclusions. Belt and braces; both are
+ * modelled here.
+ *
+ * @type {Principal[]}
+ */
+export const PRINCIPALS = deepFreeze([
+  { id: 'alice', name: 'Alice Fernandes',    groups: ['all-staff', 'engineering'] },
+  { id: 'sam',   name: 'Sam Okoro',          groups: ['all-staff', 'engineering'] },
+  { id: 'raj',   name: 'Raj Mehta',          groups: ['all-staff', 'finance'] },
+  { id: 'bg-01', name: 'Emergency access 01', groups: [] },
+]);
+
+/**
+ * Everyday targeting. Kept apart from LOCKOUT_POLICIES so a tenant-wide block
+ * does not swamp every other case.
+ *
+ * @type {Policy[]}
+ */
+export const TARGETED_POLICIES = deepFreeze([
+  {
+    id: 'P2',
+    name: 'Require MFA for finance',
+    enabled: true,
+    appliesTo: { groups: ['finance'] },
+    conditions: {},
+    requirement: 'mfa',
+  },
+  {
+    id: 'P3',
+    name: 'Require a managed device for engineering',
+    enabled: true,
+    appliesTo: { groups: ['engineering'] },
+    // Alice is in engineering and is excluded anyway. This is the case that
+    // proves exclusion is unconditional rather than a tie-break.
+    excludes: { users: ['alice'] },
+    conditions: {},
+    requirement: 'managedDevice',
+  },
+]);
+
+/**
+ * The lockout. One policy that blocks everyone, with the emergency-access
+ * account excluded — the shape of a real incident-response policy, and the
+ * shape that locks out a tenant when the exclusion is forgotten.
+ *
+ * @type {Policy[]}
+ */
+export const LOCKOUT_POLICIES = deepFreeze([
+  {
+    id: 'P1',
+    name: 'Block everything during the incident',
+    enabled: true,
+    appliesTo: 'all',
+    excludes: { users: ['bg-01'] },
+    conditions: {},
+    requirement: 'block',
+  },
+]);
+
+/** The same benign sign-in for every targeting case, so only the principal varies. */
+const BENIGN = {
+  deviceType: 'laptop', deviceTrust: 'managed', location: 'trusted',
+  riskLevel: 'low', appSensitivity: 'low',
+};
+const UNMANAGED_PHONE = {
+  deviceType: 'phone', deviceTrust: 'unmanaged', location: 'trusted',
+  riskLevel: 'low', appSensitivity: 'low',
+};
+
+const who = (id) => {
+  const p = PRINCIPALS.find((x) => x.id === id);
+  return { user: p.id, groups: p.groups };
+};
+
+/**
+ * Targeting cases. Each carries its own policy set; the runner uses
+ * `case.policies ?? POLICIES`.
+ *
+ * @type {TestCase[]}
+ */
+export const TARGETING_CASES = deepFreeze([
+  {
+    id: 'T9',
+    description: 'Raj is in finance, so the finance MFA policy applies to him',
+    policies: TARGETED_POLICIES,
+    signIn: { ...who('raj'), ...BENIGN },
+    expectedVerdict: 'challenge',
+    expectedOutstanding: ['mfa'],
+    expectedMatched: ['P2'],
+  },
+  {
+    id: 'T10',
+    description: 'Alice is in engineering but excluded — exclusion beats inclusion',
+    policies: TARGETED_POLICIES,
+    signIn: { ...who('alice'), ...UNMANAGED_PHONE },
+    expectedVerdict: 'allowed',
+    expectedOutstanding: [],
+    expectedMatched: [],
+  },
+  {
+    id: 'T11',
+    description: 'Sam — same sign-in as T10, same group, not excluded. Opposite outcome',
+    policies: TARGETED_POLICIES,
+    signIn: { ...who('sam'), ...UNMANAGED_PHONE },
+    expectedVerdict: 'blockedUnsatisfiable',
+    expectedOutstanding: [],
+    expectedMatched: ['P3'],
+  },
+  {
+    id: 'T12',
+    description: 'Tenant-wide block during an incident — Raj is locked out, as intended',
+    policies: LOCKOUT_POLICIES,
+    signIn: { ...who('raj'), ...BENIGN },
+    expectedVerdict: 'blocked',
+    expectedOutstanding: [],
+    expectedMatched: ['P1'],
+  },
+  {
+    id: 'T13',
+    description: 'Break-glass: same block, same sign-in, excluded account still gets in',
+    policies: LOCKOUT_POLICIES,
+    signIn: { ...who('bg-01'), ...BENIGN },
+    expectedVerdict: 'allowed',
+    expectedOutstanding: [],
+    expectedMatched: [],
+  },
+]);
+
+/**
+ * Everything the runner executes.
+ *
+ * T10/T11 and T12/T13 are matched pairs: identical sign-ins, different
+ * principals, opposite outcomes. If either pair ever agrees, exclusion is not
+ * being honoured — and in the T12/T13 case that means a real tenant locked out
+ * with nobody able to undo it. Run those two pairs first after any change to
+ * targeting.
+ */
+export const ALL_CASES = deepFreeze([...CASES, ...TARGETING_CASES]);
