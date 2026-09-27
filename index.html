@@ -278,9 +278,9 @@
     <section class="card" aria-labelledby="signin-heading">
       <h2 id="signin-heading"><svg class="ico" aria-hidden="true"><use href="#ico-search"></use></svg>Simulate a sign-in</h2>
       <p class="muted">
-        The five attributes the engine knows about. A sign-in always carries all five &mdash;
-        there is no <strong>Any</strong> here, unlike a policy condition. Nothing is sent
-        anywhere; the evaluation happens in this tab.
+        Who is signing in, and the five attributes the engine knows about. A sign-in always
+        carries a principal and all five attributes &mdash; there is no <strong>Any</strong> here,
+        unlike a policy condition. Nothing is sent anywhere; the evaluation happens in this tab.
       </p>
 
       <div class="scenarios">
@@ -294,6 +294,16 @@
       </div>
 
       <form id="signin-form" class="signin-form">
+        <!-- Options are rendered from PRINCIPALS in defaults.js rather than
+             written out here. The five attribute dropdowns below are hardcoded
+             and already duplicate their vocabulary in three places (see the
+             Phase 8 list); no reason to make that four. -->
+        <div class="field field--principal">
+          <label for="s-user">Who is signing in</label>
+          <select id="s-user" name="user"></select>
+          <p class="field-note" id="s-user-groups"></p>
+        </div>
+
         <div class="field-grid">
           <div class="field">
             <label for="s-deviceType">Device type</label>

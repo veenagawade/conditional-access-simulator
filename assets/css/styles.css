@@ -638,3 +638,33 @@ tr.is-editing td { background: var(--warn-bg); }
    outline to stay visible against ink. */
 .scenario.is-active .scenario-ico { border-color: var(--bg); }
 .scenario.is-active .scenario-ico .ico { stroke: var(--ink); }
+
+/* ---------------------------------------------------------------------------
+   The principal — spec §9.1
+   --------------------------------------------------------------------------- */
+
+.field--principal {
+  padding-bottom: .9rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px dashed var(--border);
+}
+
+.field-note {
+  display: flex;
+  align-items: center;
+  margin: .4rem 0 0;
+  font-size: .84rem;
+  color: var(--muted);
+}
+
+/* An account in no groups is worth noticing rather than reading as an empty
+   value. It is how break-glass accounts are kept out of reach of group-targeted
+   policies, before exclusions are even involved. */
+.field-note.is-notable {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+/* Who is signing in is a different kind of fact from what device they used, so
+   the chips say so. Decorative fill — it carries no verdict meaning. */
+.signin-summary li.is-principal { background: var(--cream); }

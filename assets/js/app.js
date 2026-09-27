@@ -11,7 +11,7 @@
 // matches the spec" are the same claim rather than two unrelated ones.
 
 import { evaluate, describeConditions } from './engine.js';
-import { createDefaultPolicies, nextPolicyId } from './defaults.js';
+import { createDefaultPolicies, nextPolicyId, PRINCIPALS, DEFAULT_PRINCIPAL_ID } from './defaults.js';
 import { POLICIES, ALL_CASES } from './fixtures.js';
 
 /* ------------------------------------------------------------------ *
@@ -294,16 +294,70 @@ const DEFAULT_SIGNIN = {
 // from `signIn` and `policies` every time it renders, so editing a policy and
 // re-rendering re-evaluates rather than redisplaying a verdict that is no
 // longer true. Storing the result object here would be the bug.
-let signIn = { ...DEFAULT_SIGNIN };
+/* ------------------------------------------------------------------ *
+ * The principal — spec §9.1
+ * ------------------------------------------------------------------ */
+
+const principalById = (id) => PRINCIPALS.find((p) => p.id === id) ?? PRINCIPALS[0];
+
+/** The principal as the engine wants it: a user id and a flat group list. */
+const asPrincipal = (id) => {
+  const p = principalById(id);
+  return { user: p.id, groups: [...p.groups] };
+};
+
+function renderPrincipalOptions() {
+  const select = document.getElementById('s-user');
+  if (!select || select.options.length) return;   // built once
+  select.innerHTML = PRINCIPALS.map((p) =>
+    `<option value="${esc(p.id)}" ${p.id === DEFAULT_PRINCIPAL_ID ? 'selected' : ''}>${esc(p.name)}</option>`
+  ).join('');
+}
+
+/**
+ * Groups are SHOWN, not chosen.
+ *
+ * You pick a person and their groups come with them. Letting anyone tick
+ * arbitrary groups would model a directory editor, which this is not, and it
+ * would make it trivial to build a principal who does not exist — then reason
+ * about a verdict for them.
+ */
+function renderPrincipalGroups() {
+  const note = document.getElementById('s-user-groups');
+  const select = document.getElementById('s-user');
+  if (!note || !select) return;
+
+  const p = principalById(select.value);
+  note.innerHTML = p.groups.length
+    ? `Groups: <span class="mono">${esc(p.groups.join(', '))}</span>`
+    : `${ico('warn')}In no groups at all — a group-targeted policy cannot reach this account.`;
+  note.classList.toggle('is-notable', p.groups.length === 0);
+}
+
+// The five attributes plus who is signing in. DEFAULT_SIGNIN stays
+// attributes-only because the scenarios reuse it, and a scenario describes a
+// situation rather than a person.
+let signIn = { ...asPrincipal(DEFAULT_PRINCIPAL_ID), ...DEFAULT_SIGNIN };
 
 function signInSummary(s) {
+  const p = principalById(s.user);
+  const principal = `
+    <li class="is-principal">
+      <span class="attr-label">Signing in as</span>
+      <span class="attr-value">${esc(p.name)}</span>
+    </li>
+    <li class="is-principal">
+      <span class="attr-label">Groups</span>
+      <span class="attr-value mono">${s.groups?.length ? esc(s.groups.join(', ')) : 'none'}</span>
+    </li>`;
+
   const chips = CONDITION_KEYS.map((key) => `
     <li>
       <span class="attr-label">${esc(ATTRIBUTE_LABELS[key])}</span>
       <span class="attr-value mono">${esc(s[key])}</span>
     </li>`).join('');
 
-  return `<ul class="signin-summary">${chips}</ul>`;
+  return `<ul class="signin-summary">${principal}${chips}</ul>`;
 }
 
 // The four verdicts, in the words a colleague would use.
@@ -499,11 +553,7 @@ function resultHtml() {
 function onSignInSubmit(event) {
   event.preventDefault();
 
-  const data = new FormData(event.currentTarget);
-  signIn = Object.fromEntries(
-    CONDITION_KEYS.map((key) => [key, String(data.get(key) ?? '')]),
-  );
-
+  signIn = formSignIn();
   render();
 }
 
@@ -512,7 +562,8 @@ function onSignInReset() {
   if (!form) return;
 
   for (const key of CONDITION_KEYS) form.elements[key].value = DEFAULT_SIGNIN[key];
-  signIn = { ...DEFAULT_SIGNIN };
+  form.elements.user.value = DEFAULT_PRINCIPAL_ID;
+  signIn = { ...asPrincipal(DEFAULT_PRINCIPAL_ID), ...DEFAULT_SIGNIN };
   render();
 }
 
@@ -572,9 +623,10 @@ const SCENARIOS = [
 function formSignIn() {
   const form = document.getElementById('signin-form');
   if (!form) return null;
-  return Object.fromEntries(
-    CONDITION_KEYS.map((key) => [key, form.elements[key].value]),
-  );
+  return {
+    ...asPrincipal(form.elements.user.value),
+    ...Object.fromEntries(CONDITION_KEYS.map((key) => [key, form.elements[key].value])),
+  };
 }
 
 /**
@@ -594,6 +646,10 @@ function formSignIn() {
 function activeScenarioId() {
   const current = formSignIn();
   if (!current) return null;
+
+  // Compared on the five attributes only. A scenario describes a situation —
+  // "travelling on a personal device" — not a person, so changing who is
+  // signing in must not clear the highlight.
   const match = SCENARIOS.find((s) =>
     CONDITION_KEYS.every((key) => s.signIn[key] === current[key]));
   return match ? match.id : null;
@@ -611,7 +667,9 @@ function renderSignInPending() {
   if (!el) return;
 
   const current = formSignIn();
-  const pending = current && CONDITION_KEYS.some((key) => current[key] !== signIn[key]);
+  // `user` as well as the five attributes: the person IS part of the sign-in,
+  // so switching from Alice to Sam makes the result on screen stale.
+  const pending = current && ['user', ...CONDITION_KEYS].some((key) => current[key] !== signIn[key]);
 
   // innerHTML rather than textContent because of the icon. The string is a
   // constant in this file; no user input reaches it.
@@ -672,9 +730,11 @@ function render() {
   renderResult();
   renderScenarios();
   renderSignInPending();
+  renderPrincipalGroups();
 }
 
 function init() {
+  renderPrincipalOptions();
   render();
   setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);
