@@ -10,7 +10,7 @@
 // the eight spec cases, so "the homepage self-test passes" and "the engine
 // matches the spec" are the same claim rather than two unrelated ones.
 
-import { evaluate, describeConditions } from './engine.js';
+import { evaluate, describeConditions, ATTRIBUTES, ATTRIBUTE_KEYS } from './engine.js';
 import { createDefaultPolicies, nextPolicyId, PRINCIPALS, DEFAULT_PRINCIPAL_ID } from './defaults.js';
 import { POLICIES, ALL_CASES } from './fixtures.js';
 
@@ -233,7 +233,7 @@ function startEdit(id) {
 
   editingId = id;
   form.elements.name.value = policy.name;
-  for (const key of CONDITION_KEYS) {
+  for (const key of ATTRIBUTE_KEYS) {
     form.elements[key].value = policy.conditions?.[key] ?? '';
   }
   form.elements.requirement.value = policy.requirement;
@@ -255,7 +255,30 @@ function cancelEdit() {
   render();
 }
 
-const CONDITION_KEYS = ['deviceType', 'deviceTrust', 'location', 'riskLevel', 'appSensitivity'];
+/**
+ * Fills both attribute forms from the one definition in engine.js — labels and
+ * options alike.
+ *
+ * `includeAny` is the one real difference between them and the reason this
+ * takes a flag rather than being two near-identical functions that drift: a
+ * policy condition may be unconstrained, a sign-in may not. A sign-in always
+ * carries all five.
+ */
+function renderAttributeFields(prefix, { includeAny }) {
+  for (const attr of ATTRIBUTES) {
+    const id = `${prefix}-${attr.key}`;
+    const select = document.getElementById(id);
+    if (!select) continue;
+
+    const label = document.querySelector(`label[for="${id}"]`);
+    if (label) label.textContent = attr.label;
+
+    if (select.options.length) continue;            // built once
+    select.innerHTML =
+      (includeAny ? '<option value="">Any</option>' : '') +
+      attr.values.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  }
+}
 
 function onPolicyFormSubmit(event) {
   event.preventDefault();
@@ -272,7 +295,7 @@ function onPolicyFormSubmit(event) {
   }
 
   const conditions = {};
-  for (const key of CONDITION_KEYS) {
+  for (const key of ATTRIBUTE_KEYS) {
     const value = String(data.get(key) ?? '');
     if (value) conditions[key] = value;
   }
@@ -312,18 +335,10 @@ function onPolicyFormSubmit(event) {
  * Sign-in builder
  * ------------------------------------------------------------------ */
 
-// The same five attributes as CONDITION_KEYS, with display labels for the
+// The same five attributes as ATTRIBUTE_KEYS, with display labels for the
 // summary. The difference that matters: a policy's `conditions` may leave a key
 // out, meaning "unconstrained". A sign-in never can — it always carries all
 // five, because it describes something that actually happened.
-const ATTRIBUTE_LABELS = {
-  deviceType: 'Device type',
-  deviceTrust: 'Device trust',
-  location: 'Location',
-  riskLevel: 'Risk level',
-  appSensitivity: 'App sensitivity',
-};
-
 /** An unremarkable sign-in — nothing about it should attract a policy. */
 const BENIGN_SIGNIN = {
   deviceType: 'laptop',
@@ -401,6 +416,8 @@ function renderPrincipalGroups() {
 // situation rather than a person.
 let signIn = { ...asPrincipal(DEFAULT_PRINCIPAL_ID), ...DEFAULT_SIGNIN };
 
+// Parameter is `s`, not `signIn`: the module-level `signIn` is the live state,
+// and shadowing it here would make a stale-render bug very easy to write.
 function signInSummary(s) {
   const p = principalById(s.user);
   const principal = `
@@ -413,9 +430,9 @@ function signInSummary(s) {
       <span class="attr-value mono">${s.groups?.length ? esc(s.groups.join(', ')) : 'none'}</span>
     </li>`;
 
-  const chips = CONDITION_KEYS.map((key) => `
+  const chips = ATTRIBUTES.map(({ key, label }) => `
     <li>
-      <span class="attr-label">${esc(ATTRIBUTE_LABELS[key])}</span>
+      <span class="attr-label">${esc(label)}</span>
       <span class="attr-value mono">${esc(s[key])}</span>
     </li>`).join('');
 
@@ -623,7 +640,7 @@ function onSignInReset() {
   const form = document.getElementById('signin-form');
   if (!form) return;
 
-  for (const key of CONDITION_KEYS) form.elements[key].value = DEFAULT_SIGNIN[key];
+  for (const key of ATTRIBUTE_KEYS) form.elements[key].value = DEFAULT_SIGNIN[key];
   form.elements.user.value = DEFAULT_PRINCIPAL_ID;
   signIn = { ...asPrincipal(DEFAULT_PRINCIPAL_ID), ...DEFAULT_SIGNIN };
   render();
@@ -687,7 +704,7 @@ function formSignIn() {
   if (!form) return null;
   return {
     ...asPrincipal(form.elements.user.value),
-    ...Object.fromEntries(CONDITION_KEYS.map((key) => [key, form.elements[key].value])),
+    ...Object.fromEntries(ATTRIBUTE_KEYS.map((key) => [key, form.elements[key].value])),
   };
 }
 
@@ -713,7 +730,7 @@ function activeScenarioId() {
   // "travelling on a personal device" — not a person, so changing who is
   // signing in must not clear the highlight.
   const match = SCENARIOS.find((s) =>
-    CONDITION_KEYS.every((key) => s.signIn[key] === current[key]));
+    ATTRIBUTE_KEYS.every((key) => s.signIn[key] === current[key]));
   return match ? match.id : null;
 }
 
@@ -731,7 +748,7 @@ function renderSignInPending() {
   const current = formSignIn();
   // `user` as well as the five attributes: the person IS part of the sign-in,
   // so switching from Alice to Sam makes the result on screen stale.
-  const pending = current && ['user', ...CONDITION_KEYS].some((key) => current[key] !== signIn[key]);
+  const pending = current && ['user', ...ATTRIBUTE_KEYS].some((key) => current[key] !== signIn[key]);
 
   // innerHTML rather than textContent because of the icon. The string is a
   // constant in this file; no user input reaches it.
@@ -794,7 +811,7 @@ function loadLockoutScenario() {
   editingId = null;
 
   form.elements.user.value = 'bg-01';
-  for (const key of CONDITION_KEYS) form.elements[key].value = BENIGN_SIGNIN[key];
+  for (const key of ATTRIBUTE_KEYS) form.elements[key].value = BENIGN_SIGNIN[key];
 
   // `signIn` is deliberately untouched. Replacing the policies re-evaluates the
   // sign-in already on screen, which is live and correct rather than stale —
@@ -817,7 +834,7 @@ function onScenarioClick(event) {
   // keeps describing the sign-in it was given until Evaluate is pressed.
   // Auto-evaluating here would leave the Evaluate button with nothing to do
   // except serve hand-edits, which is two interaction models in one form.
-  for (const key of CONDITION_KEYS) form.elements[key].value = scenario.signIn[key];
+  for (const key of ATTRIBUTE_KEYS) form.elements[key].value = scenario.signIn[key];
 
   render();
 }
@@ -840,6 +857,20 @@ function render() {
 function init() {
   renderPrincipalOptions();
   renderExcludeChecks();
+
+  // Both attribute forms are built from the one definition in engine.js. The
+  // policy form allows "Any" because a condition may be unconstrained; the
+  // sign-in form does not, because a sign-in always carries all five.
+  renderAttributeFields('f', { includeAny: true });
+  renderAttributeFields('s', { includeAny: false });
+
+  // The sign-in form's defaults were `selected` attributes in the markup until
+  // the options started being rendered. They are set here instead.
+  const signinForm = document.getElementById('signin-form');
+  if (signinForm) {
+    for (const key of ATTRIBUTE_KEYS) signinForm.elements[key].value = DEFAULT_SIGNIN[key];
+  }
+
   render();
   setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);

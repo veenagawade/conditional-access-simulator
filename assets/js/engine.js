@@ -5,6 +5,37 @@
 //
 // Spec: docs/phase1-spec.md §3 (decision steps) and §4 (resolving requirements).
 
+/* ------------------------------------------------------------------ *
+ * The vocabulary — spec §1
+ *
+ * The five attributes, their labels, and every value each one may take.
+ * ONE definition. Both forms render their dropdowns from this, the result
+ * chips take their labels from it, and import validation checks against it.
+ *
+ * It lived in three places until Phase 8 — the two forms' hardcoded <option>
+ * lists and a label map in app.js. They never disagreed, but nothing stopped
+ * them, and an import validator written against three sources of truth is a
+ * validator written three times.
+ *
+ * It sits in engine.js because these values are what the engine compares
+ * against. describeConditions() already lives here for the same reason: this
+ * file is not purely decision logic, it owns what a sign-in IS.
+ * ------------------------------------------------------------------ */
+
+export const ATTRIBUTES = Object.freeze([
+  Object.freeze({ key: 'deviceType',     label: 'Device type',     values: Object.freeze(['laptop', 'phone', 'tablet']) }),
+  Object.freeze({ key: 'deviceTrust',    label: 'Device trust',    values: Object.freeze(['managed', 'unmanaged']) }),
+  Object.freeze({ key: 'location',       label: 'Location',        values: Object.freeze(['trusted', 'foreign', 'unknown']) }),
+  Object.freeze({ key: 'riskLevel',      label: 'Risk level',      values: Object.freeze(['low', 'medium', 'high']) }),
+  Object.freeze({ key: 'appSensitivity', label: 'App sensitivity', values: Object.freeze(['low', 'medium', 'high']) }),
+]);
+
+/** Just the keys, in display order. */
+export const ATTRIBUTE_KEYS = Object.freeze(ATTRIBUTES.map((a) => a.key));
+
+/** The attribute definition for a key, or undefined if the key is not one of ours. */
+export const attributeFor = (key) => ATTRIBUTES.find((a) => a.key === key);
+
 /**
  * Does this policy apply to this sign-in?
  *
