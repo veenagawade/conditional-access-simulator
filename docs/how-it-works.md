@@ -145,17 +145,48 @@ traffic — which is what report-only mode exists to answer in real Conditional 
 simulator distinguishes *"policy is disabled — it would match this sign-in if enabled"* from
 *"policy is disabled, and location is trusted, rule requires foreign"*.
 
+## Exclusion beats inclusion, and never loses
+
+A policy applies to a sign-in when the principal is **included and not excluded**. That second
+half is unconditional. Not when the user is also named explicitly in the inclusion. Not when the
+inclusion is more specific. Not when the exclusion looks like somebody's mistake.
+
+The asymmetry is the entire safety property, and it exists for one reason.
+
+Emergency access accounts — "break-glass" — are ordinary accounts that every policy is told to
+leave alone. They are what you sign in with when a policy change has gone wrong. If exclusion
+could ever lose to an inclusion, the account that is supposed to be immune to a bad policy could
+be caught by one, and the tenant locks out the only people able to undo it. That is not a thought
+experiment; it is the mechanism behind more than one real lockout.
+
+So the rule has no exceptions. A rule without exceptions is a rule you can reason about at 3am.
+
+The simulator has a button for this. It loads a single policy that blocks everyone during an
+incident, with one account excluded, and signs you in as that account — verdict `allowed`, under a
+policy that blocks everything. Switch the dropdown to anybody else and the same sign-in comes back
+`blocked`. The explanation for the account that got through says exactly why:
+
+> `bg-01 is excluded from this policy`
+
+That line is the answer to the question asked during a real incident, and it is why targeting is
+evaluated before conditions. An excluded principal could equally truthfully be told "location is
+trusted, rule requires foreign" — but that sends the reader to look at devices when the answer is
+about people.
+
+A second, quieter practice is modelled alongside it: the emergency-access account is in **no
+groups at all**. A group-targeted policy cannot reach it even before exclusions are considered.
+Belt and braces, and both belts are real.
+
 ## What this deliberately does not model
 
 Each of these is a scoping decision, and each has a cost. They are listed with their costs
 because a simulator you cannot see the edges of is not much use.
 
-**No user or group targeting, and therefore no exclusions.** This is the big one. Real policies
-are assigned to users and groups, with exclusions — and the most important consequence is that
-**emergency access accounts must be excluded from every policy.** Skip that and a tenant-wide
-policy can lock out the administrators who would undo it, which is the mechanism behind more than
-one real lockout. Because this model has no targeting, it cannot show break-glass at all. It is
-the single most interview-relevant thing missing, and the next feature I plan to build.
+**Group targeting is in the engine but not in the editor.** Policies can be aimed at named users
+or groups, and the test page proves it — but the form only lets you *exclude*. Every policy you
+author applies to everyone, minus whoever you tick. That is a deliberate scope line rather than a
+missing piece: exclusion is the half that changes outcomes, and it is the shape of a real
+incident-response policy.
 
 **No report-only mode.** Real policies run on, report-only, or off; report-only is how a change
 gets validated before it enforces anything. Here `enabled` is a boolean, so the simulator can tell

@@ -700,3 +700,31 @@ tr.is-editing td { background: var(--warn-bg); }
   font-weight: 700;
   color: var(--accent);
 }
+
+/* ---------------------------------------------------------------------------
+   The break-glass set piece — it replaces the policy set, so it does not look
+   like the sign-in scenarios above it.
+   --------------------------------------------------------------------------- */
+
+.setpiece {
+  margin-top: 1.4rem;
+  padding-top: 1.2rem;
+  border-top: 2px dashed var(--border);
+}
+
+.setpiece-title {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0 0 .5rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.scenario--setpiece {
+  display: flex;
+  width: 100%;
+  background: var(--warn-bg);
+  border-color: var(--ink);
+}
+.scenario--setpiece .scenario-ico { background: var(--bg); }
