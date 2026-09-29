@@ -46,6 +46,24 @@ export function createDefaultPolicies() {
 
 /**
  * Next free policy id — R1, R2 … R5. Used when the editor adds a policy.
+ *
+ * Deliberately recycles. Delete R4, add a policy, and it is R4 again.
+ *
+ * That is fine HERE, and it is worth saying why, because "never recycle
+ * identifiers" is a real rule in identity systems and this is not a case of
+ * it. Recycling a SID or an object GUID is dangerous because ACLs, tokens,
+ * group memberships and audit logs all point AT that identifier, so handing it
+ * to a new principal silently grants them the old one's access.
+ *
+ * Nothing points at a policy id here. It labels a row, appears in the
+ * explanation, and sits in an export. No other policy references one, nothing
+ * stores one, and import replaces a set wholesale rather than merging — so two
+ * exported files where R5 means different things is no more a collision than
+ * two spreadsheets both having a row 5.
+ *
+ * Within a set this is collision-free by construction: highest + 1 is greater
+ * than every id present.
+ *
  * @param {{id: string}[]} policies
  */
 export function nextPolicyId(policies) {
