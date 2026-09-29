@@ -257,6 +257,18 @@
           </div>
         </fieldset>
 
+        <!-- Checkboxes are rendered from PRINCIPALS in defaults.js, same reason as
+             the sign-in picker: one definition of who exists. -->
+        <fieldset class="conditions excludes">
+          <legend>Never applies to</legend>
+          <p class="muted field-hint">
+            Exclusion beats inclusion, always. An excluded account is never caught by this
+            policy &mdash; which is how an emergency-access account stays usable when a policy
+            locks everyone else out.
+          </p>
+          <div class="checks" id="f-excludes"></div>
+        </fieldset>
+
         <div class="field">
           <label for="f-requirement">Requirement</label>
           <select id="f-requirement" name="requirement">

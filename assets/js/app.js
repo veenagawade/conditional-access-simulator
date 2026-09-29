@@ -77,11 +77,52 @@ const EMPTY_ROW = `
     </td>
   </tr>`;
 
+/* ------------------------------------------------------------------ *
+ * Policy exclusions — spec §9
+ *
+ * The editor exposes `excludes` and nothing else: every policy authored here
+ * applies to everyone, minus whoever is ticked. The engine also supports
+ * targeting a group (`appliesTo`), and /tests proves it, but the editor does
+ * not offer it — exclusion is the half that changes outcomes, and it is the
+ * shape of a real incident-response policy.
+ * ------------------------------------------------------------------ */
+
+function renderExcludeChecks() {
+  const host = document.getElementById('f-excludes');
+  if (!host || host.children.length) return;           // built once
+  host.innerHTML = PRINCIPALS.map((p) => `
+    <label class="check">
+      <input type="checkbox" name="excludes" value="${esc(p.id)}" />
+      <span>${esc(p.name)}</span>
+    </label>`).join('');
+}
+
+/** Ticked boxes -> the engine's shape. Omitted entirely when nobody is ticked. */
+function readExcludes(form) {
+  const ids = [...form.querySelectorAll('input[name="excludes"]:checked')].map((b) => b.value);
+  return ids.length ? { users: ids } : undefined;
+}
+
+function setExcludeChecks(policy) {
+  const ids = policy?.excludes?.users ?? [];
+  for (const box of document.querySelectorAll('input[name="excludes"]')) {
+    box.checked = ids.includes(box.value);
+  }
+}
+
+/** "Everyone except Emergency access 01", or nothing at all. */
+function describeExcludes(policy) {
+  const ids = policy.excludes?.users ?? [];
+  if (!ids.length) return '';
+  const names = ids.map((id) => principalById(id).name).join(', ');
+  return `<div class="row-excludes">${ico('shield')}Everyone except ${esc(names)}</div>`;
+}
+
 function policyRow(p) {
   return `
     <tr class="${p.enabled ? '' : 'is-disabled'} ${p.id === editingId ? 'is-editing' : ''}">
       <td class="mono">${esc(p.id)}</td>
-      <td class="policy-name">${esc(p.name)}</td>
+      <td class="policy-name">${esc(p.name)}${describeExcludes(p)}</td>
       <td class="muted ${p.conditions && Object.keys(p.conditions).length ? '' : 'condition-any'}">${
         p.conditions && Object.keys(p.conditions).length ? '' : ico('warn')
       }${esc(describeConditions(p.conditions))}</td>
@@ -196,6 +237,7 @@ function startEdit(id) {
     form.elements[key].value = policy.conditions?.[key] ?? '';
   }
   form.elements.requirement.value = policy.requirement;
+  setExcludeChecks(policy);
 
   setFormMode();
   render();
@@ -237,14 +279,25 @@ function onPolicyFormSubmit(event) {
 
   const requirement = String(data.get('requirement') ?? 'mfa');
 
+  const excludes = readExcludes(form);
+
   if (editingId !== null) {
-    policies = policies.map((p) =>
-      p.id === editingId ? { ...p, name, conditions, requirement } : p);
+    policies = policies.map((p) => {
+      if (p.id !== editingId) return p;
+      // Rebuilt rather than spread-over, so unticking every box actually
+      // removes the key instead of leaving a stale one behind.
+      const { excludes: _drop, ...rest } = p;
+      return { ...rest, name, conditions, requirement, ...(excludes ? { excludes } : {}) };
+    });
     editingId = null;
   } else {
     policies = [
       ...policies,
-      { id: nextPolicyId(policies), name, enabled: true, conditions, requirement },
+      {
+        id: nextPolicyId(policies),
+        name, enabled: true, conditions, requirement,
+        ...(excludes ? { excludes } : {}),
+      },
     ];
   }
 
@@ -735,6 +788,7 @@ function render() {
 
 function init() {
   renderPrincipalOptions();
+  renderExcludeChecks();
   render();
   setResetButton();
   document.getElementById('policy-rows')?.addEventListener('click', onPolicyAction);

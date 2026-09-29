@@ -668,3 +668,35 @@ tr.is-editing td { background: var(--warn-bg); }
 /* Who is signing in is a different kind of fact from what device they used, so
    the chips say so. Decorative fill — it carries no verdict meaning. */
 .signin-summary li.is-principal { background: var(--cream); }
+
+/* ---------------------------------------------------------------------------
+   Policy exclusions
+   --------------------------------------------------------------------------- */
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .9rem;
+  margin-bottom: .9rem;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .9rem;
+  cursor: pointer;
+}
+.check input { width: 1.05rem; height: 1.05rem; accent-color: var(--ink); cursor: pointer; }
+
+/* Shown under the policy name rather than in a column of its own: the table is
+   already cramped, and an exclusion is only worth space when there is one. */
+.row-excludes {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .25rem;
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--accent);
+}
