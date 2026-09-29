@@ -154,6 +154,7 @@ function onPolicyAction(event) {
   if (!button) return;
 
   disarmReset();
+  setExportNote('');
 
   const id = button.dataset.id;
   const action = button.dataset.action;
@@ -177,6 +178,82 @@ function onPolicyAction(event) {
   }
 
   render();
+}
+
+/* ------------------------------------------------------------------ *
+ * Export
+ * ------------------------------------------------------------------ */
+
+/**
+ * The exported shape. A wrapper rather than a bare array of policies.
+ *
+ * `format` lets import say "this is not a policy set" instead of failing on a
+ * missing field twenty lines in. `version` means a future change to the policy
+ * shape can be detected rather than silently misread. A file that outlives the
+ * code that wrote it has to say what it is.
+ *
+ * Principals are not exported. The directory is read-only app data, not
+ * something the user edited, and exporting it would imply importing it.
+ */
+export const POLICY_SET_FORMAT = 'conditional-access-simulator/policy-set';
+export const POLICY_SET_VERSION = 1;
+
+function policySetJson() {
+  return JSON.stringify({
+    format: POLICY_SET_FORMAT,
+    version: POLICY_SET_VERSION,
+    exported: new Date().toISOString(),
+    policies,
+  }, null, 2);
+}
+
+function exportFilename() {
+  const day = new Date().toISOString().slice(0, 10);
+  return `ca-policies-${day}.json`;
+}
+
+function setExportNote(message, kind) {
+  const note = document.getElementById('export-note');
+  if (!note) return;
+  note.textContent = message;
+  note.hidden = !message;
+  note.classList.toggle('is-notable', kind === 'bad');
+}
+
+/**
+ * Downloading a generated file under `default-src 'self'`.
+ *
+ * A blob: URL on a temporary <a download> is the usual approach, and whether
+ * it survives this CSP is the whole risk in this change — local dev sends no
+ * CSP headers, so a version that fails in production passes locally. Hence the
+ * try/catch and the visible note: a refused download and a download that
+ * simply did not happen look identical from the outside, and a silent failure
+ * here would be indistinguishable from a broken button.
+ */
+function onExportClick() {
+  let url;
+  try {
+    const blob = new Blob([policySetJson()], { type: 'application/json' });
+    url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = exportFilename();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setExportNote(`Downloaded ${exportFilename()} — ${policies.length} policies.`, 'ok');
+  } catch (err) {
+    setExportNote(`Could not export: ${err.message}. Check the browser console.`, 'bad');
+    // Re-thrown so it reaches the console rather than being swallowed by a
+    // message that only says something went wrong.
+    throw err;
+  } finally {
+    // Released on the next tick — revoking synchronously can cancel the
+    // download in some browsers before it has read the blob.
+    if (url) setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
 }
 
 function setResetButton() {
@@ -877,6 +954,7 @@ function init() {
   document.getElementById('policy-form')?.addEventListener('submit', onPolicyFormSubmit);
   document.getElementById('policy-form-cancel')?.addEventListener('click', cancelEdit);
   document.getElementById('policy-reset')?.addEventListener('click', onResetClick);
+  document.getElementById('policy-export')?.addEventListener('click', onExportClick);
   document.getElementById('signin-form')?.addEventListener('submit', onSignInSubmit);
   document.getElementById('signin-reset')?.addEventListener('click', onSignInReset);
   document.getElementById('scenario-buttons')?.addEventListener('click', onScenarioClick);

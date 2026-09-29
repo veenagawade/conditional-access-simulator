@@ -186,8 +186,14 @@
 
       <div class="list-footer">
         <p id="policy-count" class="muted"></p>
-        <button type="button" class="btn btn--sm" id="policy-reset">Reset to defaults</button>
+        <div class="row-actions">
+          <button type="button" class="btn btn--sm" id="policy-export">
+            <svg class="ico" aria-hidden="true"><use href="#ico-arrow"></use></svg>Export JSON
+          </button>
+          <button type="button" class="btn btn--sm" id="policy-reset">Reset to defaults</button>
+        </div>
       </div>
+      <p id="export-note" class="field-note" role="status" hidden></p>
 
       <form id="policy-form" class="policy-form" novalidate>
         <h3 class="form-title" id="policy-form-title">Add a policy</h3>
