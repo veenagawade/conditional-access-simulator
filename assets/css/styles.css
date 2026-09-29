@@ -728,3 +728,29 @@ tr.is-editing td { background: var(--warn-bg); }
   border-color: var(--ink);
 }
 .scenario--setpiece .scenario-ico { background: var(--bg); }
+
+/* ---------------------------------------------------------------------------
+   Import errors — every problem at once, not the first one
+   --------------------------------------------------------------------------- */
+
+.import-errors {
+  margin-top: 1rem;
+  padding: .9rem 1.1rem;
+  border: 3px solid var(--bad);
+  border-radius: var(--radius-sm);
+  background: var(--bad-bg);
+  color: var(--bad);
+  font-size: .9rem;
+}
+
+.import-errors-head {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0 0 .5rem;
+  font-weight: 800;
+}
+
+.import-errors ul { margin: 0; padding-left: 1.2rem; }
+.import-errors li { margin-bottom: .2rem; }
+.import-errors .muted { margin: .6rem 0 0; color: inherit; opacity: .8; font-weight: 700; }

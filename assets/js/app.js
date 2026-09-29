@@ -10,7 +10,7 @@
 // the eight spec cases, so "the homepage self-test passes" and "the engine
 // matches the spec" are the same claim rather than two unrelated ones.
 
-import { evaluate, describeConditions, ATTRIBUTES, ATTRIBUTE_KEYS } from './engine.js';
+import { evaluate, describeConditions, ATTRIBUTES, ATTRIBUTE_KEYS, attributeFor } from './engine.js';
 import { createDefaultPolicies, nextPolicyId, PRINCIPALS, DEFAULT_PRINCIPAL_ID } from './defaults.js';
 import { POLICIES, ALL_CASES } from './fixtures.js';
 
@@ -155,6 +155,7 @@ function onPolicyAction(event) {
 
   disarmReset();
   setExportNote('');
+  showImportErrors('', []);
 
   const id = button.dataset.id;
   const action = button.dataset.action;
@@ -254,6 +255,165 @@ function onExportClick() {
     // download in some browsers before it has read the blob.
     if (url) setTimeout(() => URL.revokeObjectURL(url), 0);
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Import
+ *
+ * Parsing is four lines. The whole value of this is what it says when a file
+ * is wrong, so two rules govern it:
+ *
+ *   EVERY problem is reported, not the first. Fixing one error, re-importing
+ *   and hitting the next is the same frustration whyNotMatched had in Phase 5
+ *   when it named only the first failing condition.
+ *
+ *   ALL OR NOTHING. A partially imported set is worse than a rejected one:
+ *   some policies new, some old, and no way to tell which. Validate
+ *   completely, then replace — or change nothing.
+ * ------------------------------------------------------------------ */
+
+const REQUIREMENTS = ['block', 'mfa', 'managedDevice'];
+const PRINCIPAL_IDS = PRINCIPALS.map((p) => p.id);
+
+/**
+ * @returns {{ policies?: object[], errors: string[] }}
+ *   `errors` empty means `policies` is safe to use.
+ */
+function validatePolicySet(raw) {
+  const errors = [];
+
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { errors: ['That file does not contain a policy set object.'] };
+  }
+  if (raw.format && raw.format !== POLICY_SET_FORMAT) {
+    return { errors: [`This file says it is "${raw.format}", not a policy set from this app.`] };
+  }
+  if (typeof raw.version === 'number' && raw.version > POLICY_SET_VERSION) {
+    return { errors: [
+      `This file is version ${raw.version}; this app understands version ${POLICY_SET_VERSION}.`,
+    ] };
+  }
+  if (!Array.isArray(raw.policies)) {
+    return { errors: ['No "policies" array. Is this a policy set exported from this app?'] };
+  }
+
+  // Structural checks above are fatal on their own — there is nothing to walk.
+  // From here every policy is checked and every problem collected.
+  const seen = new Map();
+
+  raw.policies.forEach((policy, i) => {
+    const where = policy && typeof policy.id === 'string' && policy.id ? policy.id : `Policy ${i + 1}`;
+
+    if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
+      errors.push(`Policy ${i + 1} is not an object.`);
+      return;
+    }
+    if (typeof policy.id !== 'string' || !policy.id) errors.push(`Policy ${i + 1} has no id.`);
+    else if (seen.has(policy.id)) errors.push(`Two policies share the id ${policy.id}.`);
+    else seen.set(policy.id, true);
+
+    if (typeof policy.name !== 'string' || !policy.name.trim()) {
+      errors.push(`${where}: name is missing.`);
+    }
+    if (typeof policy.enabled !== 'boolean') {
+      errors.push(`${where}: enabled must be true or false.`);
+    }
+    if (!REQUIREMENTS.includes(policy.requirement)) {
+      errors.push(
+        `${where}: requirement ${JSON.stringify(policy.requirement)} is not one of ` +
+        `${REQUIREMENTS.join(', ')}.`,
+      );
+    }
+
+    if (policy.conditions === undefined || policy.conditions === null
+        || typeof policy.conditions !== 'object' || Array.isArray(policy.conditions)) {
+      errors.push(`${where}: conditions must be an object (use {} for none).`);
+    } else {
+      for (const [key, value] of Object.entries(policy.conditions)) {
+        const attr = attributeFor(key);
+        if (!attr) {
+          errors.push(`${where}: "${key}" is not an attribute this engine knows.`);
+        } else if (!attr.values.includes(value)) {
+          errors.push(
+            `${where}: ${key} ${JSON.stringify(value)} is not one of ${attr.values.join(', ')}.`,
+          );
+        }
+      }
+    }
+
+    // appliesTo is accepted but never written by this editor. Validated anyway:
+    // a hand-written file is exactly where a typo lands, and silently ignoring
+    // a misspelled key would make a policy apply to everyone.
+    for (const [field, label] of [['appliesTo', 'appliesTo'], ['excludes', 'excludes']]) {
+      const target = policy[field];
+      if (target === undefined) continue;
+      if (field === 'appliesTo' && target === 'all') continue;
+      if (target === null || typeof target !== 'object' || Array.isArray(target)) {
+        errors.push(`${where}: ${label} must be an object with users and/or groups.`);
+        continue;
+      }
+      for (const bucket of ['users', 'groups']) {
+        if (target[bucket] === undefined) continue;
+        if (!Array.isArray(target[bucket])) {
+          errors.push(`${where}: ${label}.${bucket} must be a list.`);
+          continue;
+        }
+        if (bucket !== 'users') continue;
+        for (const id of target[bucket]) {
+          if (!PRINCIPAL_IDS.includes(id)) {
+            errors.push(`${where} ${label} ${JSON.stringify(id)}, who is not in the directory.`);
+          }
+        }
+      }
+    }
+  });
+
+  return errors.length ? { errors } : { policies: raw.policies, errors };
+}
+
+function showImportErrors(heading, errors) {
+  const box = document.getElementById('import-errors');
+  if (!box) return;
+  box.hidden = !errors.length;
+  box.innerHTML = errors.length
+    ? `<p class="import-errors-head">${ico('warn')}${esc(heading)}</p>` +
+      `<ul>${errors.map((e) => `<li>${esc(e)}</li>`).join('')}</ul>` +
+      `<p class="muted">Nothing was changed.</p>`
+    : '';
+}
+
+async function onImportFile(event) {
+  const file = event.target.files?.[0];
+  event.target.value = '';              // so the same file can be picked twice
+  if (!file) return;
+
+  setExportNote('');
+  showImportErrors('', []);
+
+  let raw;
+  try {
+    raw = JSON.parse(await file.text());
+  } catch (err) {
+    showImportErrors(`${file.name} could not be read as JSON.`, [err.message]);
+    return;
+  }
+
+  const { policies: imported, errors } = validatePolicySet(raw);
+  if (errors.length) {
+    showImportErrors(`${file.name} was not imported — ${errors.length} problem${errors.length > 1 ? 's' : ''}:`, errors);
+    return;
+  }
+
+  // No confirmation prompt. Prompts get clicked through, and Reset to defaults
+  // is the undo — the same reasoning as delete in Phase 4.
+  policies = imported;
+  editingId = null;
+  disarmReset();
+  document.getElementById('policy-form')?.reset();
+  setExcludeChecks(null);
+  setFormMode();
+  render();
+  setExportNote(`Imported ${imported.length} policies from ${file.name}.`, 'ok');
 }
 
 function setResetButton() {
@@ -955,6 +1115,9 @@ function init() {
   document.getElementById('policy-form-cancel')?.addEventListener('click', cancelEdit);
   document.getElementById('policy-reset')?.addEventListener('click', onResetClick);
   document.getElementById('policy-export')?.addEventListener('click', onExportClick);
+  document.getElementById('policy-import')?.addEventListener('click', () =>
+    document.getElementById('policy-file')?.click());
+  document.getElementById('policy-file')?.addEventListener('change', onImportFile);
   document.getElementById('signin-form')?.addEventListener('submit', onSignInSubmit);
   document.getElementById('signin-reset')?.addEventListener('click', onSignInReset);
   document.getElementById('scenario-buttons')?.addEventListener('click', onScenarioClick);
