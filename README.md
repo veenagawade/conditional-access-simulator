@@ -21,6 +21,8 @@ UI — it is the evaluation model:
 - **A block decision wins outright.** No amount of grant controls overrides it.
 - Otherwise, the grant requirements of every matching policy **stack** — the user must satisfy all
   of them, not just the strictest one.
+- **An exclusion beats an inclusion, always.** That single rule is what makes a break-glass
+  account work, and it is the one this project spends the most care on.
 
 This project makes that model visible and testable.
 
@@ -31,24 +33,28 @@ step. The engine is the substance of the project; a build pipeline would only ad
 between a commit and a live site.
 
 ```
-index.html              policy editor, sign-in builder, result panel, status card
+index.html              policy editor, sign-in builder, scenarios, result panel, status card
 tests.html              engine tests and data-invariant checks
-assets/js/engine.js     the evaluation engine — matching, requirements, verdicts
-assets/js/fixtures.js   frozen test data: the spec's policies and its eight cases
-assets/js/defaults.js   the app's editable starting policy set
+assets/js/engine.js     the evaluation engine — targeting, matching, requirements, verdicts
+assets/js/fixtures.js   frozen test data: three policy sets, the principals, thirteen cases
+assets/js/defaults.js   the app's editable starting policies, and the principal directory
 assets/js/tests.js      test runner and data-invariant checks
-assets/js/app.js        page wiring only — no evaluation logic
+assets/js/app.js        page wiring, export and import — no evaluation logic
 assets/css/             styles.css, tests.css (system font stack, no external fonts)
 netlify.toml            security headers, deploy contexts, pretty URLs
-docs/                   design spec and setup notes
+docs/                   design spec, the how-it-works write-up, setup notes
 ```
 
-Two rules hold the structure together:
+Three rules hold the structure together:
 
 1. **One engine, one definition.** There is no evaluation logic outside `engine.js`.
 2. **Fixtures are test data.** `fixtures.js` is frozen and read only by the tests. The app's
    editable policy set comes from `defaults.js`, so editing policies in the browser cannot
    affect what the tests assert.
+3. **Store the input, derive the output.** The sign-in and the policies are state; the verdict,
+   the explanation and the scenario highlight are all recomputed on every render. Nothing is
+   cached, so there is nothing to invalidate and no way for the screen to show a verdict that is
+   no longer true.
 
 ## Running locally
 
@@ -84,8 +90,11 @@ external font, add that host to the policy rather than removing it.
 - [x] Phase 4 — policy editor: list, enable/disable, delete, add, edit, reset
 - [x] Phase 5 — sign-in builder and result panel, with live re-evaluation
 - [x] Phase 6 — one-click scenarios, and the [how-it-works](docs/how-it-works.md) write-up
-- [ ] Phase 7 — user and group targeting, with exclusions (break-glass accounts)
-- [ ] Phase 8 — persistence (export/import JSON) and cleanup
+- [x] Phase 7 — user and group targeting, with exclusions (break-glass accounts)
+- [x] Phase 8 — persistence (export/import JSON) and cleanup
+
+All planned phases are complete. The most likely next addition is report-only mode — the one
+piece of real operational practice the simulator does not yet model.
 
 ## Licence
 

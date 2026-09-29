@@ -177,6 +177,32 @@ A second, quieter practice is modelled alongside it: the emergency-access accoun
 groups at all**. A group-targeted policy cannot reach it even before exclusions are considered.
 Belt and braces, and both belts are real.
 
+## Taking in someone else's policy set
+
+Export is a download; there is no interesting decision in it. Import is where the decisions are,
+because an imported file is the only untrusted input this app has.
+
+**Validation reports every problem, not the first one.** A validator that stops at the first error
+turns one broken file into five rounds of fix-and-retry, and none of those rounds shows you the
+shape of what is actually wrong. The cost is that every check has to carry on after it fails,
+which is more code than an early return — worth it, because the person holding the broken file is
+usually not the person who wrote it.
+
+**Import is all-or-nothing.** A partial import would leave you holding some of your old policies
+and some of theirs, in an order nobody chose, with no way to tell which was which. A policy set
+has no safe halfway state, so a rejection ends with *nothing was changed*.
+
+What it checks is the vocabulary, not just the shape: unknown condition keys, values outside the
+allowed set, duplicate ids, unrecognised requirements, and exclusions naming principals that do
+not exist. That last one matters more than it looks — an exclusion pointing at a deleted account
+is a break-glass account that is no longer excluded from anything, and it fails silently, in the
+direction of *more* access.
+
+This is also what makes the engine's strictness affordable. `resolveRequirement` throws on a
+requirement it does not recognise, which would be reckless if an arbitrary JSON file could reach
+it. It cannot: the editor offers three requirements, and import rejects anything else at the door.
+Unreachable by construction is exactly when a loud failure costs nothing.
+
 ## What this deliberately does not model
 
 Each of these is a scoping decision, and each has a cost. They are listed with their costs
@@ -191,6 +217,7 @@ incident-response policy.
 **No report-only mode.** Real policies run on, report-only, or off; report-only is how a change
 gets validated before it enforces anything. Here `enabled` is a boolean, so the simulator can tell
 you what a policy *would* do but cannot model the operational practice of finding out safely.
+It is the most likely next addition, and the smallest.
 
 **No session controls** — sign-in frequency, persistent browser. They would not exercise the
 evaluation model, which is what this project is about.
@@ -220,9 +247,12 @@ verdict that is no longer true. The same pattern turns up three separate times i
 once you start looking for it.
 
 **Being precise about what you don't know is a feature.** Where the engine can't explain
-something, it says so — an unrecognised verdict renders a loud error rather than an empty box that
-looks like a pass. A confident-sounding default would hide exactly the class of bug worth
-catching.
+something, it says so. An unrecognised verdict renders a loud error rather than an empty box that
+looks like a pass, and an unrecognised *requirement* throws rather than quietly falling through to
+"prompt for MFA". That fallthrough was the original behaviour, and it is the worst failure
+available to an access decision: the engine asks the user for something instead of admitting it
+did not understand the policy, so the run looks like it worked. A confident-sounding default hides
+exactly the class of bug worth catching.
 
 **Explaining a denial is harder than producing one.** The verdict was a day's work. The
 explanation — which policies, which conditions, which requirement, and why each one landed where
@@ -231,5 +261,5 @@ actually need.
 
 ---
 
-*Design spec, including the full decision order and the eight test cases:*
+*Design spec, including the full decision order and the thirteen test cases:*
 [`docs/phase1-spec.md`](phase1-spec.md)
