@@ -122,10 +122,22 @@ return 'failed';
  */
 export function resolveRequirement(requirement, signIn) {
   if (requirement === 'managedDevice') {
-    if (signIn.deviceTrust === 'managed') return 'satisfied';
-    return 'failed';
+    return signIn.deviceTrust === 'managed' ? 'satisfied' : 'failed';
   }
-  return 'unresolved';
+  if (requirement === 'mfa') return 'unresolved';
+
+  // It used to fall through to 'unresolved' for anything unrecognised, which
+  // meant an unknown requirement quietly became an MFA prompt — the engine
+  // asking the user for something instead of admitting it did not understand
+  // the policy. In an access decision that is the worst available failure: it
+  // looks like it worked.
+  //
+  // Safe to throw now, and only now. Import validates requirements against this
+  // list and the editor offers exactly three, so nothing can reach here.
+  // Unreachable by construction is precisely when a loud failure costs nothing
+  // and buys a guarantee: if this ever fires, a policy shape has changed and
+  // the engine has not been told.
+  throw new Error(`resolveRequirement: unknown requirement ${JSON.stringify(requirement)}`);
 }
 
 /**
