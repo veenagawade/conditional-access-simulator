@@ -182,7 +182,9 @@ Recorded deliberately, not overlooked. Each is a candidate for a later phase.
 
 - ~~**No user or group targeting.**~~ **Closed by §9** (Phase 7). Policies are assigned to users
   and groups with exclusions, and **emergency access ("break-glass") accounts are excluded from
-  every policy** — the lesson behind more than one real tenant lockout.
+  every policy** — the lesson behind more than one real tenant lockout. One narrower gap remains:
+  the engine supports `appliesTo`, but the policy editor only exposes `excludes`, so every policy
+  authored in the app applies to everyone minus whoever is excluded.
 - **No report-only mode.** Real policies run `on`, `report-only`, or `off`. Report-only is how
   changes are validated safely before enforcement. Currently `enabled` is a boolean.
 - **No session controls** (sign-in frequency, persistent browser).

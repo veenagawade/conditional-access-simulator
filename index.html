@@ -303,6 +303,33 @@
         </p>
         <div class="scenario-buttons" id="scenario-buttons" role="group"
              aria-labelledby="scenarios-title"></div>
+
+        <!-- Kept apart from the five above, and labelled differently, because it
+             does something they never do: it replaces the policy set. A button
+             that quietly rewrites your policies while sitting among buttons that
+             do not is the kind of surprise that makes every verdict on the page
+             untrustworthy. -->
+        <div class="setpiece">
+          <h4 class="setpiece-title" id="setpiece-title">
+            <svg class="ico" aria-hidden="true"><use href="#ico-shield"></use></svg>
+            Or load a whole situation
+          </h4>
+          <p class="muted field-hint">
+            Unlike the buttons above, this one <strong>replaces your policies</strong>.
+            <em>Reset to defaults</em> in the Policies card puts them back.
+          </p>
+          <button type="button" class="scenario scenario--setpiece" id="load-lockout">
+            <span class="scenario-ico"><svg class="ico" aria-hidden="true"><use href="#ico-ban"></use></svg></span>
+            <span class="scenario-text">
+              <span class="scenario-label">Tenant-wide block, with one way back in</span>
+              <span class="scenario-note">
+                A single policy blocking everyone during an incident, with the emergency-access
+                account excluded. Loads the policy and that account into the form &mdash; press
+                <strong>Evaluate</strong> to see it get in, then switch to anyone else.
+              </span>
+            </span>
+          </button>
+        </div>
       </div>
 
       <form id="signin-form" class="signin-form">

@@ -324,6 +324,15 @@ const ATTRIBUTE_LABELS = {
   appSensitivity: 'App sensitivity',
 };
 
+/** An unremarkable sign-in — nothing about it should attract a policy. */
+const BENIGN_SIGNIN = {
+  deviceType: 'laptop',
+  deviceTrust: 'managed',
+  location: 'trusted',
+  riskLevel: 'low',
+  appSensitivity: 'low',
+};
+
 // The sign-in the page opens on: someone abroad on their own phone, reaching
 // for something harmless.
 //
@@ -752,6 +761,48 @@ function renderScenarios() {
   }).join('');
 }
 
+/**
+ * The break-glass set piece — spec §9.
+ *
+ * The five scenarios above describe SIGN-INS and never touch the policy set.
+ * This one has to, because its whole point is a tenant-wide block that does not
+ * exist in the defaults. So it is separated in the markup, labelled as loading
+ * a policy set, and says what it will replace before it is clicked.
+ *
+ * It loads the form — the policy set and who is signing in — and stops there,
+ * exactly like the five above. Press Evaluate to see the verdict.
+ *
+ * The policy table and the result panel both update immediately anyway,
+ * because render() recomputes from the live `policies` array: the block bites
+ * the sign-in already on screen and the panel flips to `blocked`. Then
+ * Evaluate, as the excluded account, flips it to `allowed`. Seeing the block
+ * land before seeing it not land is the better demonstration, and it keeps one
+ * interaction model with no exception to explain.
+ */
+function loadLockoutScenario() {
+  const form = document.getElementById('signin-form');
+  if (!form) return;
+
+  policies = [{
+    id: 'R1',
+    name: 'Block everything during the incident',
+    enabled: true,
+    conditions: {},
+    excludes: { users: ['bg-01'] },
+    requirement: 'block',
+  }];
+  editingId = null;
+
+  form.elements.user.value = 'bg-01';
+  for (const key of CONDITION_KEYS) form.elements[key].value = BENIGN_SIGNIN[key];
+
+  // `signIn` is deliberately untouched. Replacing the policies re-evaluates the
+  // sign-in already on screen, which is live and correct rather than stale —
+  // and the pending hint says the form has moved on.
+  setFormMode();
+  render();
+}
+
 function onScenarioClick(event) {
   const button = event.target.closest('button[data-scenario]');
   if (!button) return;
@@ -798,6 +849,7 @@ function init() {
   document.getElementById('signin-form')?.addEventListener('submit', onSignInSubmit);
   document.getElementById('signin-reset')?.addEventListener('click', onSignInReset);
   document.getElementById('scenario-buttons')?.addEventListener('click', onScenarioClick);
+  document.getElementById('load-lockout')?.addEventListener('click', loadLockoutScenario);
   // The highlight and the pending hint both describe the form, so they have to
   // react to the form, not only to Evaluate.
   document.getElementById('signin-form')?.addEventListener('change', render);
